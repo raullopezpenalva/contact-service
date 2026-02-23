@@ -99,12 +99,39 @@ Projects documentation is located in `/docs`:
 ## Local Development
 
 1. Clone the repository.
-2. Start the infrastructure with Docker Compose:
+2. Set up environment for postgres and the app with two file:
+   1. postgres.env
+		Example:
+		```
+		POSTGRES_DB=example_db
+		POSTGRES_USER=user-example
+		POSTGRES_PASSWORD=password-example
+		```
+   2. service.env
+		Example:
+		```
+		# -----------------------------------------------
+		# --- SPRING APPLICATION CONFIGURATION ---
+		# -----------------------------------------------
+
+		# --- Application Environment Variables ---
+		SPRING_APPLICATION_NAME=contact-service
+		SPRING_SERVER_PORT=8080
+
+		# --- PostgreSQL Database Configuration ---
+		SPRING_DATASOURCE_URL=jdbc:postgresql://contact_postgres:5432/example_db
+		SPRING_DATASOURCE_USERNAME=user-example
+		SPRING_DATASOURCE_PASSWORD=password-example
+
+		# --- Security Configuration ---
+		SPRING_SECURITY_USER_NAME=ADMIN
+		SPRING_SECURITY_USER_PASSWORD=ADMIN
+		```
+3. Start the infrastructure with Docker Compose:
 	 ```sh
-	 docker-compose up
+	 docker-compose up -d --build
 	 ```
-3. Configure environment variables for SMTP and database as needed.
-4. Build and run the Spring Boot application.
+	Remenber to setup the host port what you want to use in the ports setup for the contact_service in the compose.yml
 
 ---
 
