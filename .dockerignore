@@ -1,0 +1,12 @@
+target/
+docs/
+
+.vscode/
+.git/
+.gitignore
+
+compose.yml
+
+HELP.md
+README.md
+LICENSE
