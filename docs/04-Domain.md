@@ -152,7 +152,7 @@ For administration and performance:
 ---
 
 
-## Attribute Summary Table
+## Entity Summary Table
 
 | Attribute            | Type                    | Nullable | Description                                                      |
 |----------------------|-------------------------|----------|------------------------------------------------------------------|

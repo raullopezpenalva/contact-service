@@ -1,4 +1,4 @@
-package com.raullopezpenalva.contact_service.contact.model;
+package com.raullopezpenalva.contact_service.contact.domain.model;
 
 public enum ContactMessageStatus {
     NEW,

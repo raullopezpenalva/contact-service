@@ -1,4 +1,4 @@
-package com.raullopezpenalva.contact_service.contact.config;
+package com.raullopezpenalva.contact_service.contact.infrastructure.config;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;

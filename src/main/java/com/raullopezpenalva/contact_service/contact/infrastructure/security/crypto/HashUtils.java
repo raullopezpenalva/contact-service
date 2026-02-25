@@ -1,4 +1,4 @@
-package com.raullopezpenalva.contact_service.contact.util;
+package com.raullopezpenalva.contact_service.contact.infrastructure.security.crypto;
 
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
