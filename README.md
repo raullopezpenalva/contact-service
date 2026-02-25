@@ -87,19 +87,34 @@ Contact Service is a Spring Boot microservice designed to handle contact form su
 - Physical deletion of messages
 
 ---
+## Security
 
+
+The application is secured using Spring Security. Endpoints under `/api/v1/admin/*` are protected with Basic Auth authentication.
+
+The admin username and password can be easily changed using environment variables in the `service.env` file:
+
+```
+SPRING_SECURITY_USER_NAME=user-example
+SPRING_SECURITY_USER_PASSWORD=password-example
+```
+---
 ## Documentation
 
 Projects documentation is located in `/docs`:
 
+- [`project-overview.md`](./docs/01-Project-overview.md) -- Overview of the project
+- [`MVP-scope.md`](./docs/02-MVP-scope.md) -- MVP scope
+- [`stack.md`](./docs/03-Stack.md) -- Stack decisions
 - [`domain.md`](./docs/04-Domain.md) -- Domain model definition
 - [`flows.md`](./docs/05-Flows.md) -- Functional flows (public + admin)
-- [`stack.md`](./docs/03-Stack.md) -- Stack decisions
+- [`DTO.md`](./docs/06-DTO.md) -- DTO information
+
 
 ## Local Development
 
 1. Clone the repository.
-2. Set up environment for postgres and the app with two file:
+2. Set up environment for postgres and the app with two files:
    1. postgres.env
 		Example:
 		```
@@ -124,8 +139,8 @@ Projects documentation is located in `/docs`:
 		SPRING_DATASOURCE_PASSWORD=password-example
 
 		# --- Security Configuration ---
-		SPRING_SECURITY_USER_NAME=ADMIN
-		SPRING_SECURITY_USER_PASSWORD=ADMIN
+		SPRING_SECURITY_USER_NAME=user-example
+		SPRING_SECURITY_USER_PASSWORD=password-example
 		```
 3. Start the infrastructure with Docker Compose:
 	 ```sh
