@@ -169,4 +169,8 @@ public class ContactMessage {
         this.contentHash = contentHash;
     }
 
+    public void setUpdatedAt(LocalDateTime updatedAt) {
+        this.updatedAt = updatedAt;
+    }
+
 }

@@ -1,7 +1,9 @@
 package com.raullopezpenalva.contact_service.contact.api.controller;
 
+import com.raullopezpenalva.contact_service.contact.api.dto.admin.request.UpdateContactMessageStatusRequest;
 import com.raullopezpenalva.contact_service.contact.api.dto.admin.response.ExtendedContactMessageAdminResponse;
 import com.raullopezpenalva.contact_service.contact.api.dto.admin.response.SimpleContactMessageAdminResponse;
+import com.raullopezpenalva.contact_service.contact.api.dto.admin.response.UpdateContactMessageStatusResponse;
 import com.raullopezpenalva.contact_service.contact.api.error.ApiError;
 import com.raullopezpenalva.contact_service.contact.application.service.ContactAdminService;
 import com.raullopezpenalva.contact_service.contact.domain.model.ContactMessageStatus;
@@ -142,5 +144,63 @@ public class ContactAdminController {
         return ResponseEntity.status(HttpStatus.OK).body(response);
     }
     
-    
+    @Operation(
+        summary = "Update Contact Message Status",
+        description = "Updates the status and admin note of a specific contact message by its unique ID."
+    )
+    @ApiResponses({
+        @ApiResponse(
+            responseCode = "200",
+            description = "Contact message status updated successfully",
+            content = @Content(
+                mediaType = "application/json",
+                schema = @Schema(implementation = UpdateContactMessageStatusResponse.class)
+            )
+        ),
+        @ApiResponse(
+            responseCode = "400",
+            description = "Invalid request data",
+            content = @Content(
+                mediaType = "application/json",
+                schema = @Schema(implementation = ApiError.class)
+            )
+        ),
+        @ApiResponse(
+            responseCode = "404",
+            description = "Contact message not found with the specified ID",
+            content = @Content(
+                mediaType = "application/json",
+                schema = @Schema(implementation = ApiError.class)
+            )
+        ),
+        @ApiResponse(
+            responseCode = "401",
+            description = "Unauthorized access",
+            content = @Content(
+                mediaType = "application/json",
+                schema = @Schema(implementation = ApiError.class)
+            )
+        ),
+        @ApiResponse(
+            responseCode = "500",
+            description = "Internal server error",
+            content = @Content(
+                mediaType = "application/json",
+                schema = @Schema(implementation = ApiError.class)
+            )
+        )
+    })
+    @PatchMapping(
+        value = "/messages/{id}/status",
+        consumes = MediaType.APPLICATION_JSON_VALUE,
+        produces = MediaType.APPLICATION_JSON_VALUE
+    )
+    public ResponseEntity<UpdateContactMessageStatusResponse> updateMessageStatus(
+        @PathVariable UUID id,
+        @Valid @RequestBody UpdateContactMessageStatusRequest request
+    ) {
+        UpdateContactMessageStatusResponse response = contactAdminService.updateContactMessageStatus(id, request);
+        return ResponseEntity.status(HttpStatus.OK).body(response);
+
+    }
 }
