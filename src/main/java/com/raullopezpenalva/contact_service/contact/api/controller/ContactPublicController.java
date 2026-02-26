@@ -1,7 +1,7 @@
 package com.raullopezpenalva.contact_service.contact.api.controller;
 
-import com.raullopezpenalva.contact_service.contact.api.dto.request.CreateContactMessageRequest;
-import com.raullopezpenalva.contact_service.contact.api.dto.response.ContactMessageResponse;
+import com.raullopezpenalva.contact_service.contact.api.dto.pub.request.CreateContactMessageRequest;
+import com.raullopezpenalva.contact_service.contact.api.dto.pub.response.ContactMessageResponse;
 import com.raullopezpenalva.contact_service.contact.api.error.ApiError;
 import com.raullopezpenalva.contact_service.contact.application.model.ClientContext;
 import com.raullopezpenalva.contact_service.contact.application.service.*;
@@ -22,10 +22,10 @@ import org.springframework.http.*;
 @Tag(name = "Contact Service API (Public)", description = "API for handling contact messages")   
 @RestController
 @RequestMapping("/api/v1/contact")
-public class ContactServiceController {
+public class ContactPublicController {
 
     @Autowired
-    private ContactService contactService;
+    private ContactPublicService contactService;
 
 
     // POST request to create a new contact message

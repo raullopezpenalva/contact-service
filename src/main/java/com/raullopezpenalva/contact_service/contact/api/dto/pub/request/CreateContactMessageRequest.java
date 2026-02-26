@@ -1,4 +1,4 @@
-package com.raullopezpenalva.contact_service.contact.api.dto.request;
+package com.raullopezpenalva.contact_service.contact.api.dto.pub.request;
 
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;

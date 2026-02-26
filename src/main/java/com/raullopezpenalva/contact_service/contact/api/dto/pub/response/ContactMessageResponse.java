@@ -1,4 +1,4 @@
-package com.raullopezpenalva.contact_service.contact.api.dto.response;
+package com.raullopezpenalva.contact_service.contact.api.dto.pub.response;
 
 import java.time.LocalDateTime;
 import java.util.UUID;

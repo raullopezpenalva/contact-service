@@ -1,13 +1,13 @@
 package com.raullopezpenalva.contact_service.contact.application.mapper;
 
-import com.raullopezpenalva.contact_service.contact.api.dto.request.CreateContactMessageRequest;
-import com.raullopezpenalva.contact_service.contact.api.dto.response.ContactMessageResponse;
+import com.raullopezpenalva.contact_service.contact.api.dto.pub.request.CreateContactMessageRequest;
+import com.raullopezpenalva.contact_service.contact.api.dto.pub.response.ContactMessageResponse;
 import com.raullopezpenalva.contact_service.contact.application.model.ClientContext;
 import com.raullopezpenalva.contact_service.contact.domain.model.ContactMessage;
 import com.raullopezpenalva.contact_service.contact.infrastructure.security.crypto.HashUtils;
 
 
-public class ContactMessageMapper {
+public class ContactMessagePublicMapper {
 
     // Maps CreateContactMessageRequest DTO and ClientContext to ContactMessage entity
     public static ContactMessage toEntity(CreateContactMessageRequest request, ClientContext clientContext) {

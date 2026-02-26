@@ -7,3 +7,5 @@ tasks.json
 
 target/
 *.log
+
+dev-compose-starter.sh
