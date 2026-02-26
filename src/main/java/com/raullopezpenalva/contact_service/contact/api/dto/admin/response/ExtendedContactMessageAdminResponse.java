@@ -15,11 +15,12 @@ public class ExtendedContactMessageAdminResponse {
     private String sourceIp;
     private String userAgent;
     private LocalDateTime createdAt;
+    private LocalDateTime updatedAt;
 
     public ExtendedContactMessageAdminResponse() {
     }
 
-    public ExtendedContactMessageAdminResponse(UUID id, String email, String subject, String content, ContactMessageStatus status, String adminNote, String sourceIp, String userAgent, LocalDateTime createdAt) {
+    public ExtendedContactMessageAdminResponse(UUID id, String email, String subject, String content, ContactMessageStatus status, String adminNote, String sourceIp, String userAgent, LocalDateTime createdAt, LocalDateTime updatedAt) {
         this.id = id;
         this.email = email;
         this.subject = subject;
@@ -29,6 +30,7 @@ public class ExtendedContactMessageAdminResponse {
         this.sourceIp = sourceIp;
         this.userAgent = userAgent;
         this.createdAt = createdAt;
+        this.updatedAt = updatedAt;
     }
 
     // Getters and Setters
@@ -103,5 +105,13 @@ public class ExtendedContactMessageAdminResponse {
 
     public void setCreatedAt(LocalDateTime createdAt) {
         this.createdAt = createdAt;
+    }
+
+    public LocalDateTime getUpdatedAt() {
+        return updatedAt;
+    }
+
+    public void setUpdatedAt(LocalDateTime updatedAt) {
+        this.updatedAt = updatedAt;
     }
 }

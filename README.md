@@ -65,7 +65,10 @@ Contact Service is a Spring Boot microservice designed to handle contact form su
 ### 2. Admin: List Messages
 - Authenticated admin can list messages, filter by status, and paginate results.
 
-### 3. Admin: Change Message Status
+### 3. Admin: Retrieve Detailed Message by ID
+- Retrieve a specific message with comprehensive details.
+
+### 4. Admin: Change Message Status
 - Admin can update message status (`NEW`, `READ`, `ARCHIVED`, `SPAM`, `NOTIFICATION_FAILED`) and add internal notes.
 
 ---
