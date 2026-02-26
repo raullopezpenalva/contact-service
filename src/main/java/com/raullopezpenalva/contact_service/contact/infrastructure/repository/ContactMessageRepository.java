@@ -1,5 +1,6 @@
 package com.raullopezpenalva.contact_service.contact.infrastructure.repository;
 
+import java.util.Optional;
 import java.util.UUID;
 
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -15,4 +16,5 @@ public interface ContactMessageRepository extends JpaRepository<ContactMessage, 
     // Additional query methods can be defined here if needed
     Page<ContactMessage> findAll(Pageable pageable);
     Page<ContactMessage> findByStatus(ContactMessageStatus status, Pageable pageable);
+    Optional<ContactMessage> findById(UUID id);
 }
