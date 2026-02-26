@@ -10,9 +10,6 @@ import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
-import com.raullopezpenalva.contact_service.contact.api.controller.ApiError;
-import com.raullopezpenalva.contact_service.contact.api.controller.FieldErrorItem;
-
 import jakarta.servlet.http.HttpServletRequest;
 
 @RestControllerAdvice

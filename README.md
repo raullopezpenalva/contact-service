@@ -110,6 +110,21 @@ Projects documentation is located in `/docs`:
 - [`flows.md`](./docs/05-Flows.md) -- Functional flows (public + admin)
 - [`DTO.md`](./docs/06-DTO.md) -- DTO information
 
+---
+
+## OpenAPI/Swagger
+
+This repository integrates API documentation using **springdoc-openapi-starter-webmvc-ui**, enabling comprehensive and interactive exploration of all available endpoints. The documentation is accessible via two primary methods:
+
+- **Swagger UI**  
+  Accessible at [http://localhost:port/swagger-ui.html](http://localhost:8080/swagger-ui.html), this browser-based interface provides a user-friendly visualization of the API, allowing developers to review and test endpoints directly.
+
+- **OpenAPI JSON Specification**  
+  Available at [http://localhost:port/v3/api-docs](http://localhost:8080/v3/api-docs), this endpoint serves the OpenAPI specification in JSON format. The specification can be imported into tools such as SwaggerHub or Postman for further analysis, testing, or integration.
+
+All OpenAPI documentation configuration is centralized in the `OpenApiConfig.java` class within the `config` package, ensuring maintainability and consistency across the service.
+
+---
 
 ## Local Development
 
