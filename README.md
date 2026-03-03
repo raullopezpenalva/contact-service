@@ -23,12 +23,46 @@ Contact Service is a Spring Boot microservice designed to handle contact form su
 
 ## Technology Stack
 
-- Java + Spring Boot
+- Java 21
+- Spring Boot 3.5.11
 - RESTful JSON API
 - Spring Data JPA + PostgreSQL
-- Spring Mail (SMTP notifications)
+- Event-driven design
+- Spring Mail (SMTP notifications) (MVPv1.2.0)
 - Spring Security (Basic Auth for admin endpoints)
 - Docker Compose (local infrastructure)
+
+---
+
+## Architecture
+
+The service follows a modular clean architecture dsign.
+
+Modules:
+- Contact (busines domain)
+- Notification (platform integration)
+
+The system uses domain events to decouple business logic from architecture concerns.
+```
+Client
+  ↓
+Contact Module
+  ↓
+Domain Event
+  ↓
+Notification Module
+  ↓
+Telegram API
+```
+
+---
+
+## Design Decisions
+
+- Domain events are used to decouple modules.
+- Notification logic is isolated from business logic.
+- Infrastructure dependencies are kept out of the domain layer.
+- The system is designed for future extensibility (email, audit logs, etc).
 
 ---
 
@@ -107,6 +141,20 @@ SPRING_SECURITY_USER_NAME=user-example
 SPRING_SECURITY_USER_PASSWORD=password-example
 ```
 ---
+## Domain Events & Notifications
+
+The system uses domain events to decouple business logic from external integrations.
+
+When a contact request is created:
+
+1. The entity is persisted
+2. A domain event is published
+3. A notification handler reacts
+4. A Telegram notification is sent
+
+This design allows adding new notification channels (email, SMS, etc.) without modifying the contact module.
+
+---
 ## Documentation
 
 Projects documentation is located in `/docs`:
@@ -182,9 +230,16 @@ All OpenAPI documentation configuration is centralized in the `OpenApiConfig.jav
 
 ---
 
+## Project Purpose
+
+This project is part of my backend architecture and DevOps learning path.
+It focuses on event-driven design, modular structure and clean separation of concerns.
+
+---
+
 ## Project status
 
-MVP v1 in progress
+MVP v1.0.0 in progress
 
 ## License
 
