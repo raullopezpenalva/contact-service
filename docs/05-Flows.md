@@ -23,9 +23,7 @@ This document describes the functional flows of the **Contact Backend** service 
    - `createdAt/updatedAt`
    - (optional MVP+) `sourceIp`, `userAgent`, `contentHash`
 5. The backend persists the message in the database.
-6. The backend attempts to notify the administrator:
-   - if OK: records `lastNotifiedAt` and `notificationAttempts += 1`
-   - if FAIL: sets `status = NOTIFICATION_FAILED` (the message is retained)
+6. The backend notifies the administrator.
 7. The backend responds with `201 Created` and `{ id, createdAt }`.
 
 ### Acceptance Criteria

@@ -26,7 +26,7 @@ The MVP must be:
 ## 3. Notification
 
 - Sends a simple notification to the owner.
-- Can be via SMTP email.
+- It will via Telegram chatbot.
 - Does not block the user response.
 
 ## 4. Basic Administration
