@@ -51,7 +51,7 @@ jobs:
         run: |
           docker build \
             -t $REGISTRY/$IMAGE_NAME:${{ github.ref_name }} \
-            -t $REGISTRY/$IMAGE_NAME:latest
+            -t $REGISTRY/$IMAGE_NAME:latest \
             .
 
       - name: Push Docker Images to GHCR
