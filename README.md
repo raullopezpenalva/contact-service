@@ -221,6 +221,22 @@ All OpenAPI documentation configuration is centralized in the `OpenApiConfig.jav
 
 ---
 
+## Testing
+
+The project includes both unit tests and integration tests.
+
+Unit tests verify isolated components such as mappers and domain transformations.
+
+Integration tests start the Spring Boot context and validate the full request flow from the HTTP API down to the event-driven notification system.
+
+Run the test suite with:
+```
+mvn clean test
+```
+See [docs/09-Tests.md](./docs/09-Tests.md) for detailed information about the testing strategy.
+
+---
+
 ## Success Criteria
 
 - Users can submit contact forms and messages are stored.

@@ -129,6 +129,10 @@ public class ContactMessage {
         return contentHash;
     }
 
+    public void setId(UUID id) {
+        this.id = id;
+    }
+
     public void setEmail(String email) {
         this.email = email;
     }
