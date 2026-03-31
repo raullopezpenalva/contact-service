@@ -149,7 +149,7 @@ When a contact request is created:
 
 1. The entity is persisted
 2. A domain event is published
-3. A notification handler reacts
+3. A notification handler reacts and persist the notification
 4. A Telegram notification is sent
 
 This design allows adding new notification channels (email, SMS, etc.) without modifying the contact module.

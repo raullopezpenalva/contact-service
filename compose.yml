@@ -10,14 +10,14 @@ services:
     volumes:
       - contact-dev-data:/var/lib/postgresql/data
 
-  contact-service:
-    container_name: contact_service
-    build: .
-    restart: unless-stopped
-    env_file:
-      - service.env
-    ports:
-      - "8089:8080"
+  # contact-service:
+  #   container_name: contact_service
+  #   build: .
+  #   restart: unless-stopped
+  #   env_file:
+  #     - service.env
+  #   ports:
+  #     - "8089:8080"
 
 volumes:
   contact-dev-data:

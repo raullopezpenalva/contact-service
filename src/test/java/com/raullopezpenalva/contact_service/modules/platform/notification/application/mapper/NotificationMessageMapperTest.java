@@ -1,7 +1,8 @@
 package com.raullopezpenalva.contact_service.modules.platform.notification.application.mapper;
 
+import com.raullopezpenalva.contact_service.modules.contact.domain.events.ContactRequestCreatedEvent;
 import com.raullopezpenalva.contact_service.modules.platform.notification.application.model.NotificationMessage;
-import com.raullopezpenalva.contact_service.shared.events.ContactRequestCreatedEvent;
+
 import org.junit.jupiter.api.Test;
 
 import java.time.Instant;

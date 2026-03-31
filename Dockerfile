@@ -6,7 +6,7 @@ COPY . .
 
 RUN mvn clean package
 
-FROM gcr.io/distroless/java21-debian12:nonroot AS service
+FROM dhi.io/eclipse-temurin:21 AS service
 
 WORKDIR /app
 

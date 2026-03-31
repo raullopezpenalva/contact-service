@@ -1,9 +1,8 @@
 name: CI - Build and Push to GHCR
 
 on:
-  push:
-    branches: [main]
-    tags: ['v*']
+  release:
+    types: [released]
   
 permissions:
   contents: read
@@ -47,14 +46,18 @@ jobs:
       - name: Log in to GitHub Container Registry
         run: echo "${{ secrets.REGISTRY_TOKEN}}" | docker login ${{ env.REGISTRY }} -u ${{ secrets.REGISTRY_USER }} --password-stdin
 
+      - name: Extract tag from ref
+        id: extract_tag
+        run: echo "TAG=${GITHUB_REF##*/}" >> $GITHUB_ENV
+
       - name: Build Docker Images
         run: |
           docker build \
-            -t $REGISTRY/$IMAGE_NAME:${{ github.ref_name }} \
+            -t $REGISTRY/$IMAGE_NAME:$TAG \
             -t $REGISTRY/$IMAGE_NAME:latest \
             .
 
       - name: Push Docker Images to GHCR
         run: |
-          docker push $REGISTRY/$IMAGE_NAME:${{ github.ref_name }}
+          docker push $REGISTRY/$IMAGE_NAME:$TAG
           docker push $REGISTRY/$IMAGE_NAME:latest
