@@ -3,7 +3,12 @@ package com.raullopezpenalva.contact_service.modules.platform.notification.appli
 import com.raullopezpenalva.contact_service.modules.platform.notification.application.model.NotificationMessage;
 import com.raullopezpenalva.contact_service.modules.platform.notification.application.port.out.NotificationDeliveryRepository;
 import com.raullopezpenalva.contact_service.modules.platform.notification.application.port.out.NotificationGateway;
+import com.raullopezpenalva.contact_service.modules.platform.notification.domain.model.NotificationChannel;
 import com.raullopezpenalva.contact_service.modules.platform.notification.domain.model.NotificationDelivery;
+
+import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -14,19 +19,22 @@ import org.springframework.stereotype.Service;
 public class NotificationService {
 
     private static final Logger log = LoggerFactory.getLogger(NotificationService.class);
-    private final NotificationGateway notificationGateway;
     private final NotificationDeliveryRepository notificationDeliveryRepository;
     private final boolean notificationsEnabled;
-
+    private Map<NotificationChannel, NotificationGateway> gateways;
+    
     public NotificationService(
-        NotificationGateway notificationGateway,
-        NotificationDeliveryRepository notificationDeliveryRepository,
-        @Value("${notifications.enabled:true}") boolean notificationsEnabled
+            List<NotificationGateway> notificationGateways,
+            NotificationDeliveryRepository notificationDeliveryRepository,
+            @Value("${app.notification.enabled:true}") boolean notificationsEnabled
     ) {
-        this.notificationGateway = notificationGateway;
+        this.gateways = notificationGateways.stream()
+                .collect(Collectors.toMap(NotificationGateway::getChannel, gateway -> gateway));
+
         this.notificationDeliveryRepository = notificationDeliveryRepository;
         this.notificationsEnabled = notificationsEnabled;
     }
+
 
     public void sendNotification(NotificationMessage message, NotificationDelivery delivery) {
         notificationDeliveryRepository.save(delivery);
@@ -39,7 +47,13 @@ public class NotificationService {
         }
         try {
             delivery.incrementAttempts();
-            notificationGateway.sendNotification(message);
+            NotificationGateway gateway = gateways.get(delivery.getChannel());
+
+            if (gateway == null) {
+                throw new IllegalStateException("No gateway found for channel: " + delivery.getChannel());
+            }
+
+            gateway.sendNotification(message);
             delivery.markAsSent();
             log.info("Notification sent successfully for eventId={}", message.getEventId());
         } catch (Exception ex) {

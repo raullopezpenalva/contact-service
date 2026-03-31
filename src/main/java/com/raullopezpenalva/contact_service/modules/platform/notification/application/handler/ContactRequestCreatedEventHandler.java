@@ -1,6 +1,7 @@
 package com.raullopezpenalva.contact_service.modules.platform.notification.application.handler;
 
 import com.raullopezpenalva.contact_service.modules.platform.notification.application.model.NotificationMessage;
+import com.raullopezpenalva.contact_service.modules.platform.notification.application.port.in.NotificationChannelResolver;
 import com.raullopezpenalva.contact_service.modules.contact.domain.events.ContactRequestCreatedEvent;
 import com.raullopezpenalva.contact_service.modules.platform.notification.application.mapper.NotificationDeliveryMapper;
 import com.raullopezpenalva.contact_service.modules.platform.notification.application.mapper.NotificationMessageMapper;
@@ -19,9 +20,11 @@ public class ContactRequestCreatedEventHandler {
 
     private static final Logger log = LoggerFactory.getLogger(ContactRequestCreatedEventHandler.class);
     private final NotificationService notificationService;
+    private final NotificationChannelResolver notificationChannelResolver;
 
-    public ContactRequestCreatedEventHandler(NotificationService notificationService) {
+    public ContactRequestCreatedEventHandler(NotificationService notificationService, NotificationChannelResolver notificationChannelResolver) {
         this.notificationService = notificationService;
+        this.notificationChannelResolver = notificationChannelResolver;
     }
 
     @Async
@@ -29,7 +32,7 @@ public class ContactRequestCreatedEventHandler {
     public void handle(ContactRequestCreatedEvent event) {
         try {
             NotificationMessage message = NotificationMessageMapper.toNotificationMessage(event);
-            NotificationDelivery delivery = NotificationDeliveryMapper.fromEvent(event);
+            NotificationDelivery delivery = NotificationDeliveryMapper.fromEvent(event, notificationChannelResolver.resolve());
 
             log.info(
                 "Handling eventType={}, eventId={}, contactRequestId={}",

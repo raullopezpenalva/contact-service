@@ -9,6 +9,15 @@ services:
       - "5432:5432"
     volumes:
       - contact-dev-data:/var/lib/postgresql/data
+  
+  Email-Service:
+    image: maildev/maildev
+    container_name: email_service
+    ports:
+      - "1080:1080"  # Web UI
+      - "1025:1025"  # SMTP
+    # expose:
+    #   - 1025      # SMTP
 
   # contact-service:
   #   container_name: contact_service
