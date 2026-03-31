@@ -1,11 +1,12 @@
 package com.raullopezpenalva.contact_service.modules.platform.notification.infrastructure.telegram;
 
 import com.raullopezpenalva.contact_service.modules.platform.notification.application.model.NotificationMessage;
-import com.raullopezpenalva.contact_service.modules.platform.notification.application.service.NotificationChannel;
+import com.raullopezpenalva.contact_service.modules.platform.notification.application.port.out.NotificationGateway;
+
 import org.springframework.stereotype.Component;;
 
 @Component
-public class TelegramNotificationChannel implements NotificationChannel {
+public class TelegramNotificationChannel implements NotificationGateway {
 
     private final TelegramClient telegramClient;
 

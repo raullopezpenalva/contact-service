@@ -1,7 +1,9 @@
-package com.raullopezpenalva.contact_service.shared.events;
+package com.raullopezpenalva.contact_service.modules.contact.domain.events;
 
 import java.time.Instant;
 import java.util.UUID;
+
+import com.raullopezpenalva.contact_service.shared.events.DomainEvent;
 
 public record ContactRequestCreatedEvent(
     UUID eventId,
@@ -29,4 +31,5 @@ public record ContactRequestCreatedEvent(
     public String eventType() {
         return TYPE;
     }
+
 }

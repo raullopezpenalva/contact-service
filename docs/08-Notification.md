@@ -32,29 +32,38 @@ Structure:
 ```
 notification
 ├── application
-│   ├── handler
-│   ├── service
-│   └── mapper
+│   ├── handler
+│   ├── service
+│   ├── mapper
+│   └── port
+│       └── out
 ├── domain
-│   └── model
+│   └── model
 └── infrastructure
-	└── telegram
+    ├── telegram
+    └── persistence
+        ├── entity
+        ├── repository
+        ├── adapter
+        └── mapper
 ````
 
 ---
 
 ## Event-Driven Flow
 
-The notification process is triggered by a domain event.
-
-### Flow
-
 1. A contact request is created
 2. `ContactPublicService` persists the entity
 3. A `ContactRequestCreatedEvent` is published
 4. `ContactRequestCreatedEventHandler` receives the event
-5. The handler delegates to `NotificationService`
-6. The notification channel sends the external message
+5. The handler maps:
+   - Event → `NotificationMessage`
+   - Event → `NotificationDelivery`
+6. `NotificationService`:
+   - Persists delivery (PENDING)
+   - Sends notification via gateway
+   - Updates delivery status (SENT / FAILED)
+   - Persists updated delivery
 
 ---
 
@@ -80,15 +89,20 @@ TelegramClient
 
 ## NotificationService
 
-The `NotificationService` acts as an orchestration layer.
+The `NotificationService` acts as an orchestration layer for notification delivery.
 
 Responsibilities:
 
-- Receive a notification request
-- Delegate to the configured notification channel
-- Handle logging and error reporting
+- Persist delivery state before sending
+- Execute the notification through the configured gateway
+- Update delivery status (SENT / FAILED)
+- Handle retry-related state (attempts, errors)
+- Ensure delivery traceability
 
-It does NOT contain infrastructure-specific logic.
+It does NOT:
+
+- Contain infrastructure-specific logic
+- Perform direct database operations (uses repository port)
 
 ---
 
@@ -115,7 +129,65 @@ Payload example:
   "disable_web_page_preview": true
 }
 ```
+---
+## Notification Delivery Model
 
+To improve reliability and traceability, notification delivery is persisted in the database.
+
+Each notification attempt is represented by a `NotificationDelivery` domain object.
+
+### Responsibilities
+
+- Track delivery status (PENDING, SENT, FAILED)
+- Store number of attempts
+- Capture last error message
+- Persist payload snapshot for debugging
+
+### Lifecycle
+
+1. A delivery is created with status `PENDING`
+2. It is persisted before sending
+3. A send attempt is performed
+4. Status is updated to:
+   - `SENT` on success
+   - `FAILED` on error
+5. The updated state is persisted
+
+This enables:
+
+- Retry strategies
+- Idempotency
+- Observability
+- Future multi-channel support
+---
+## Persistence Layer
+
+Notification delivery persistence is implemented using a clean separation between domain and infrastructure.
+
+### Components
+
+- Domain Model:
+  - `NotificationDelivery`
+  - `NotificationStatus`
+  - `NotificationChannel`
+
+- Application Port:
+  - `NotificationDeliveryRepository`
+
+- Infrastructure:
+  - `NotificationDeliveryEntity` (JPA)
+  - `NotificationDeliveryJpaRepository`
+  - `NotificationDeliveryRepositoryAdapter`
+  - `NotificationDeliveryPersistenceMapper`
+
+### Design Principles
+
+- Domain is independent from persistence
+- JPA entities are isolated in infrastructure
+- Mapping is handled explicitly via mappers
+- Application depends only on ports (interfaces)
+
+This ensures the system can evolve without coupling to a specific database.
 ---
 ## Configuration
 The following properties are required:
@@ -135,7 +207,7 @@ telegram.api.base-url=${TELEGRAM_API_BASE_URL:https://api.telegram.org}
 ## Feature Toggle
 Notifications can be enabled or disabled via:
 ````properties
-app.notification.enabled
+notifications.enabled
 ````
 This allows running the application without external calls in certain environments (e.g., local development).
 
@@ -160,3 +232,17 @@ Possible architectural improvements:
 - Retry mechanisms
 - Multiple notification channels (Email, Slack, etc.)
 - Structured logging and observability
+
+---
+## Reliability Considerations
+
+The system is designed to support reliable notification delivery.
+
+Although retries are not implemented yet, the current design enables:
+
+- Retry mechanisms based on delivery status
+- Idempotency using eventId + channel
+- Failure tracking through persisted errors
+- Future scheduling of pending deliveries
+
+This prepares the system for production-grade resilience.

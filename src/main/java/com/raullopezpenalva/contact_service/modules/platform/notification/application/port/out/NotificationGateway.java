@@ -1,7 +1,7 @@
-package com.raullopezpenalva.contact_service.modules.platform.notification.application.service;
+package com.raullopezpenalva.contact_service.modules.platform.notification.application.port.out;
 
 import com.raullopezpenalva.contact_service.modules.platform.notification.application.model.NotificationMessage;
 
-public interface NotificationChannel {
+public interface NotificationGateway {
     void sendNotification(NotificationMessage message);
 }

@@ -1,9 +1,12 @@
 package com.raullopezpenalva.contact_service.modules.platform.notification.application.handler;
 
 import com.raullopezpenalva.contact_service.modules.platform.notification.application.model.NotificationMessage;
+import com.raullopezpenalva.contact_service.modules.contact.domain.events.ContactRequestCreatedEvent;
+import com.raullopezpenalva.contact_service.modules.platform.notification.application.mapper.NotificationDeliveryMapper;
 import com.raullopezpenalva.contact_service.modules.platform.notification.application.mapper.NotificationMessageMapper;
 import com.raullopezpenalva.contact_service.modules.platform.notification.application.service.NotificationService;
-import com.raullopezpenalva.contact_service.shared.events.ContactRequestCreatedEvent;
+import com.raullopezpenalva.contact_service.modules.platform.notification.domain.model.NotificationDelivery;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
@@ -26,6 +29,7 @@ public class ContactRequestCreatedEventHandler {
     public void handle(ContactRequestCreatedEvent event) {
         try {
             NotificationMessage message = NotificationMessageMapper.toNotificationMessage(event);
+            NotificationDelivery delivery = NotificationDeliveryMapper.fromEvent(event);
 
             log.info(
                 "Handling eventType={}, eventId={}, contactRequestId={}",
@@ -33,7 +37,7 @@ public class ContactRequestCreatedEventHandler {
                 event.eventId(),
                 event.contactRequestId()
             );
-            notificationService.sendNotification(message);
+            notificationService.sendNotification(message, delivery);
         } catch (Exception ex) {
             
             log.error(

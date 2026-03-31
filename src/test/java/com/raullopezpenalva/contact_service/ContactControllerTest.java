@@ -2,7 +2,8 @@ package com.raullopezpenalva.contact_service;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.raullopezpenalva.contact_service.modules.contact.infrastructure.repository.ContactMessageRepository;
-import com.raullopezpenalva.contact_service.modules.platform.notification.application.service.NotificationChannel;
+import com.raullopezpenalva.contact_service.modules.platform.notification.application.port.out.NotificationGateway;
+
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
@@ -27,7 +28,7 @@ class ContactControllerTest {
     @Autowired ContactMessageRepository contactMessageRepository;
     @Autowired ObjectMapper objectMapper;
 
-    @MockitoBean NotificationChannel notificationChannel;
+    @MockitoBean NotificationGateway notificationGateway;
 
     @Test
     void createContact_shouldPersistAndTriggerNotification() throws Exception {
@@ -55,13 +56,13 @@ class ContactControllerTest {
             .anyMatch(m -> "integration@test.com".equals(m.getEmail())));
 
         // Assert Notification called
-        verify(notificationChannel, timeout(1000).times(1)).sendNotification(any());
+        verify(notificationGateway, timeout(1000).times(1)).sendNotification(any());
     }
 
     @Test
     void createContact_shouldReturn201EvenIfNotificationFails() throws Exception {
         // Arrange
-        doThrow(new RuntimeException("telegram down")).when(notificationChannel).sendNotification(any());
+        doThrow(new RuntimeException("telegram down")).when(notificationGateway).sendNotification(any());
 
         var payload = """
         {
@@ -86,6 +87,6 @@ class ContactControllerTest {
             .anyMatch(m -> "fail@test.com".equals(m.getEmail())));
 
         // Assert Notification called
-        verify(notificationChannel, timeout(1000).times(1)).sendNotification(any());
+        verify(notificationGateway, timeout(1000).times(1)).sendNotification(any());
     }
 }
