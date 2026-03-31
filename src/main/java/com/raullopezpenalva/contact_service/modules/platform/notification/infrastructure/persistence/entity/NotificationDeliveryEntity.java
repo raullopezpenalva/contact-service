@@ -8,7 +8,6 @@ import com.raullopezpenalva.contact_service.modules.platform.notification.domain
 
 import jakarta.annotation.Nonnull;
 import jakarta.persistence.*;
-import jakarta.validation.constraints.NotBlank;
 
 @Entity
 @Table(name = "notification_deliveries")
