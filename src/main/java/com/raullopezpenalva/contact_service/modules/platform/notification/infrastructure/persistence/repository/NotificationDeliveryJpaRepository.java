@@ -4,6 +4,7 @@ import com.raullopezpenalva.contact_service.modules.platform.notification.infras
 import com.raullopezpenalva.contact_service.modules.platform.notification.domain.model.NotificationChannel;
 import org.springframework.data.jpa.repository.JpaRepository;
 
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -14,4 +15,5 @@ public interface NotificationDeliveryJpaRepository
             UUID eventId,
             NotificationChannel channel
     );
+    List<NotificationDeliveryEntity> findAll();
 }

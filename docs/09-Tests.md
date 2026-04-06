@@ -96,6 +96,7 @@ Verifies that:
 
 - API still returns `201 Created`
 - Message is persisted in the database
+- NotificationDelivery is persisted in the database
 - Notification failure does not break the request flow
 
 This behavior ensures that the notification system is **non-blocking**.

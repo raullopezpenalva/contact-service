@@ -1,36 +1,35 @@
-package com.raullopezpenalva.contact_service.modules.platform.notification.infrastructure.telegram;
+package com.raullopezpenalva.contact_service.modules.platform.notification.infrastructure.emailSender;
+
+import org.springframework.stereotype.Component;
 
 import com.raullopezpenalva.contact_service.modules.platform.notification.application.model.NotificationMessage;
 import com.raullopezpenalva.contact_service.modules.platform.notification.application.port.out.NotificationGateway;
 import com.raullopezpenalva.contact_service.modules.platform.notification.domain.model.NotificationChannel;
 
-import org.springframework.stereotype.Component;;
-
 @Component
-public class TelegramNotificationChannel implements NotificationGateway {
+public class EmailNotificationChannel implements NotificationGateway {
 
-    private final TelegramClient telegramClient;
+    private final EmailClient emailClient;
 
-    public TelegramNotificationChannel(TelegramClient telegramClient) {
-        this.telegramClient = telegramClient;
+    public EmailNotificationChannel(EmailClient emailClient) {
+        this.emailClient = emailClient;
     }
 
     @Override
     public NotificationChannel getChannel() {
-        return NotificationChannel.TELEGRAM;
+        return NotificationChannel.EMAIL;
     }
-
+    
     @Override
     public void sendNotification(NotificationMessage message) {
-        String text = buildMessageText(message);
-        telegramClient.sendMessage(text);
+        String subject = "New contact request received!";
+        String body = buildMessageBody(message);
+        emailClient.sendEmail(message.getEmail(), subject, body);
     }
 
-    private String buildMessageText(NotificationMessage message) {
+    private String buildMessageBody(NotificationMessage message) {
         return """
-            New contact request received!
-
-            Email: %s
+            From: %s
             Subject: %s
             Message: %s
         """.formatted(
@@ -38,5 +37,6 @@ public class TelegramNotificationChannel implements NotificationGateway {
             message.getSubject(),
             message.getMessage()
         );
-    }    
+    }
+    
 }

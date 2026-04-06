@@ -9,14 +9,17 @@ public final class NotificationDeliveryMapper {
     private NotificationDeliveryMapper() {
     }
 
-    public static NotificationDelivery fromEvent(ContactRequestCreatedEvent event) {
+    public static NotificationDelivery fromEvent(
+        ContactRequestCreatedEvent event,
+        NotificationChannel channel
+    ) {
 
         String payload = buildPayloadSnapshot(event);
 
         return NotificationDelivery.createNew(
                 event.eventId(),
                 event.eventType(),
-                NotificationChannel.TELEGRAM,
+                channel,
                 payload
         );
     }
