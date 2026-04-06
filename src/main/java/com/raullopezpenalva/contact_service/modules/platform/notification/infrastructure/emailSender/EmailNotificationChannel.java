@@ -24,7 +24,7 @@ public class EmailNotificationChannel implements NotificationGateway {
     public void sendNotification(NotificationMessage message) {
         String subject = "New contact request received!";
         String body = buildMessageBody(message);
-        emailClient.sendEmail(subject, body);
+        emailClient.sendEmail(message.getEmail(), subject, body);
     }
 
     private String buildMessageBody(NotificationMessage message) {

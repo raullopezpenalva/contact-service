@@ -13,15 +13,20 @@ public class EmailClient {
     @Value("${email.recipient}")
     private String recipient;
 
+    @Value("${spring.mail.username}")
+    private String sender;
+
     public EmailClient(JavaMailSender mailSender) {
         this.mailSender = mailSender;
     }
 
-    public void sendEmail(String subject, String body) {
+    public void sendEmail(String replyTo, String subject, String body) {
         try {
             var message = mailSender.createMimeMessage();
             var helper = new MimeMessageHelper(message, true);
+            helper.setFrom(sender);
             helper.setTo(recipient);
+            helper.setReplyTo(replyTo);
             helper.setSubject(subject);
             helper.setText(body, false);
             mailSender.send(message);
