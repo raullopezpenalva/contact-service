@@ -9,8 +9,22 @@ It is designed following Clean Architecture principles and remains fully decoupl
 Currently implemented notification channel:
 
 - Telegram Bot API
+- Email SMTP
 
-The module is extensible and allows additional channels (Email, SMS, Webhooks, etc.) without modifying the Contact module.
+## Supported Notification Channels
+
+The module supports multiple notification channels that can be configured independently or used simultaneously. Channel configuration is managed through the `app.notifications.channels` application property.
+
+**Supported channels:**
+- `EMAIL` – SMTP-based email delivery
+- `TELEGRAM` – Telegram Bot API integration
+
+**Configuration syntax:**
+- Single channel: `app.notifications.channels=EMAIL`
+- Multiple channels: `app.notifications.channels=EMAIL,TELEGRAM`
+
+Channel names must be specified in uppercase and separated by commas when using multiple channels. This configuration can be set via environment variables in your `example.env` file for environment-specific deployment.
+The module is extensible and allows additional channels (SMS, Webhooks, etc.) without modifying the Contact module.
 
 ---
 
@@ -36,10 +50,12 @@ notification
 │   ├── service
 │   ├── mapper
 │   └── port
+│       ├── in
 │       └── out
 ├── domain
 │   └── model
 └── infrastructure
+    ├── emailSender
     ├── telegram
     └── persistence
         ├── entity
@@ -81,9 +97,9 @@ ContactRequestCreatedEventHandler
 ↓
 NotificationService
 ↓
-TelegramNotificationChannel
+TelegramNotificationChannel or/and EmailNotificationChannel
 ↓
-TelegramClient
+TelegramClient or/and EmailClient
 ````
 ---
 
@@ -128,6 +144,31 @@ Payload example:
   "text": "New contact request received",
   "disable_web_page_preview": true
 }
+```
+
+---
+## Email Integration
+
+The Email integration is implemented in the infrastructure layer and use `spring-boot-starter-mail` dependency.
+
+### EmailClient
+
+Responsible for:
+
+- Building the email request with `MimeMessageHelper`
+- Sends the email via SMTP with `JavaMailSender`
+
+email application porperties:
+```
+spring.mail.host=${SPRING_MAIL_HOST}
+spring.mail.port=${SPRING_MAIL_PORT}
+spring.mail.username=${SPRING_MAIL_USERNAME}
+spring.mail.properties.mail.smtp.starttls.enable=false
+spring.mail.properties.mail.smtp.starttls.required=false
+spring.mail.properties.mail.smtp.auth=false
+spring.mail.properties.mail.smtp.connectiontimeout=5000
+spring.mail.properties.mail.smtp.timeout=5000
+spring.mail.properties.mail.smtp.writetimeout=5000
 ```
 ---
 ## Notification Delivery Model
@@ -192,15 +233,21 @@ This ensures the system can evolve without coupling to a specific database.
 ## Configuration
 The following properties are required:
 ````properties
+app.notification.enabled
+app.notifications.channels
 telegram.bot.token
 telegram.chat.id
 telegram.api.base-url
+email.recipient
 ````
 Example configuration via environment variables:
 ````properties
+app.notification.enabled=${NOTIFICATION_ENABLED:true}
+app.notifications.channels=${NOTIFICATIONS_CHANNELS:EMAIL}
 telegram.bot.token=${TELEGRAM_BOT_TOKEN}
 telegram.chat.id=${TELEGRAM_CHAT_ID}
 telegram.api.base-url=${TELEGRAM_API_BASE_URL:https://api.telegram.org}
+email.recipient=${EMAIL_RECIPIENT:dummy}
 ````
 
 ---
@@ -213,7 +260,7 @@ This allows running the application without external calls in certain environmen
 
 ---
 ## Decoupling Strategy
-The Contact module does not depend on Telegram.
+The Contact module does not depend on the notification channel (like Telegram or Email).
 It only:
 - Publishes a domain event
 The Notification module:
@@ -230,7 +277,6 @@ Possible architectural improvements:
 - Message broker integration (Kafka / RabbitMQ)
 - Outbox pattern implementation
 - Retry mechanisms
-- Multiple notification channels (Email, Slack, etc.)
 - Structured logging and observability
 
 ---

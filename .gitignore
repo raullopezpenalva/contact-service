@@ -1,4 +1,6 @@
-*.env*
+service.env
+postgres.env
+debug.env
 .env
 
 .vscode/

@@ -2,8 +2,13 @@ package com.raullopezpenalva.contact_service;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.raullopezpenalva.contact_service.modules.contact.infrastructure.repository.ContactMessageRepository;
-import com.raullopezpenalva.contact_service.modules.platform.notification.application.port.out.NotificationGateway;
+import com.raullopezpenalva.contact_service.modules.platform.notification.domain.model.NotificationChannel;
+import com.raullopezpenalva.contact_service.modules.platform.notification.domain.model.NotificationStatus;
+import com.raullopezpenalva.contact_service.modules.platform.notification.infrastructure.emailSender.EmailClient;
+import com.raullopezpenalva.contact_service.modules.platform.notification.infrastructure.persistence.repository.NotificationDeliveryJpaRepository;
+import com.raullopezpenalva.contact_service.modules.platform.notification.infrastructure.telegram.TelegramClient;
 
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
@@ -18,6 +23,9 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.mockito.Mockito.*;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
+import static org.awaitility.Awaitility.await;
+import static java.util.concurrent.TimeUnit.SECONDS;
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
 
 @SpringBootTest
 @AutoConfigureMockMvc
@@ -27,11 +35,22 @@ class ContactControllerTest {
     @Autowired MockMvc mockMvc;
     @Autowired ContactMessageRepository contactMessageRepository;
     @Autowired ObjectMapper objectMapper;
+    @Autowired NotificationDeliveryJpaRepository notificationDeliveryJpaRepository;
 
-    @MockitoBean NotificationGateway notificationGateway;
+    @MockitoBean
+    EmailClient emailClient;
+
+    @MockitoBean
+    TelegramClient telegramClient;
+
+    @BeforeEach
+    void cleanUp() {
+        notificationDeliveryJpaRepository.deleteAll();
+        contactMessageRepository.deleteAll();
+    }
 
     @Test
-    void createContact_shouldPersistAndTriggerNotification() throws Exception {
+    void createContact_shouldPersistAndTriggerNotificationDelivery() throws Exception {
         // Arrange
         var payload = """
         {
@@ -51,18 +70,37 @@ class ContactControllerTest {
         .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_JSON))
         .andExpect(jsonPath("$.id").exists());
 
-        // Assert DB
+        // Assert message persisted
         assertTrue(contactMessageRepository.findAll().stream()
             .anyMatch(m -> "integration@test.com".equals(m.getEmail())));
 
-        // Assert Notification called
-        verify(notificationGateway, timeout(1000).times(1)).sendNotification(any());
+        // Assert DB - notification delivery persisted asynchronously
+        await().atMost(5, SECONDS).pollInterval(100, MILLISECONDS).untilAsserted(() -> {
+            var deliveries = notificationDeliveryJpaRepository.findAll();
+
+            System.out.println("---- TEST DELIVERIES ----");
+            deliveries.forEach(d -> System.out.println(
+                "id=" + d.getId()
+                + ", eventId=" + d.getEventId()
+                + ", channel=" + d.getChannel()
+                + ", status=" + d.getStatus()
+                + ", attempts=" + d.getAttempts()
+                + ", lastError=" + d.getLastError()
+            ));
+
+            assertTrue(deliveries.stream().anyMatch(d ->
+                d.getChannel() == NotificationChannel.TELEGRAM &&
+                d.getStatus() == NotificationStatus.SENT &&
+                d.getPayloadSnapshot() != null &&
+                d.getPayloadSnapshot().contains("integration@test.com")
+            ));
+        });
     }
 
     @Test
-    void createContact_shouldReturn201EvenIfNotificationFails() throws Exception {
+    void createContact_shouldReturn201AndPersistFailedDeliveryWhenNotificationFails() throws Exception {
         // Arrange
-        doThrow(new RuntimeException("telegram down")).when(notificationGateway).sendNotification(any());
+        doThrow(new RuntimeException("telegram down")).when(telegramClient).sendMessage(any());
 
         var payload = """
         {
@@ -86,7 +124,28 @@ class ContactControllerTest {
         assertTrue(contactMessageRepository.findAll().stream()
             .anyMatch(m -> "fail@test.com".equals(m.getEmail())));
 
-        // Assert Notification called
-        verify(notificationGateway, timeout(1000).times(1)).sendNotification(any());
+        
+        // Assert DB - failed notification delivery persisted asynchronously
+        await().atMost(5, SECONDS).pollInterval(100, MILLISECONDS).untilAsserted(() -> {
+            var deliveries = notificationDeliveryJpaRepository.findAll();
+
+            System.out.println("---- FAILED TEST DELIVERIES ----");
+            deliveries.forEach(d -> System.out.println(
+                "id=" + d.getId()
+                + ", eventId=" + d.getEventId()
+                + ", channel=" + d.getChannel()
+                + ", status=" + d.getStatus()
+                + ", attempts=" + d.getAttempts()
+                + ", lastError=" + d.getLastError()
+            ));
+            assertTrue(deliveries.stream().anyMatch(d ->
+                d.getChannel() == NotificationChannel.TELEGRAM &&
+                d.getStatus() == NotificationStatus.FAILED &&
+                d.getPayloadSnapshot() != null &&
+                d.getPayloadSnapshot().contains("fail@test.com") &&
+                d.getLastError() != null &&
+                d.getLastError().contains("telegram down")
+            ));
+        });
     }
 }

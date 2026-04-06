@@ -50,7 +50,7 @@ public class ContactRequestCreatedEventHandler {
                 NotificationDelivery delivery = NotificationDeliveryMapper.fromEvent(event, channel);
 
                 
-                log.info("Sending notification via channel {} for eventId={}, contactRequestId={}", channel, event.eventId(), event.contactRequestId());
+                log.info("Sending notification via {} channel for eventId={}, contactRequestId={}", channel, event.eventId(), event.contactRequestId());
 
                 notificationService.sendNotification(message, delivery);
             }

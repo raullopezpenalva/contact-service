@@ -52,7 +52,7 @@ Domain Event
   ↓
 Notification Module
   ↓
-Telegram API
+Telegram API or Email SMTP
 ```
 
 ---
@@ -62,7 +62,7 @@ Telegram API
 - Domain events are used to decouple modules.
 - Notification logic is isolated from business logic.
 - Infrastructure dependencies are kept out of the domain layer.
-- The system is designed for future extensibility (email, audit logs, etc).
+- The system is designed for future extensibility (audit logs, etc).
 
 ---
 
@@ -127,14 +127,14 @@ Telegram API
 ## Notification Strategy
 
 v1.0.0 – Telegram Bot notification  
-v1.1.0 – SMTP / Email provider integration
+v1.2.0 – SMTP / Email provider integration
 ---
 ## Security
 
 
 The application is secured using Spring Security. Endpoints under `/api/v1/admin/*` are protected with Basic Auth authentication.
 
-The admin username and password can be easily changed using environment variables in the `service.env` file:
+The admin username and password can be easily changed using environment variables in the `example.env` file:
 
 ```
 SPRING_SECURITY_USER_NAME=user-example
@@ -165,6 +165,9 @@ Projects documentation is located in `/docs`:
 - [`domain.md`](./docs/04-Domain.md) -- Domain model definition
 - [`flows.md`](./docs/05-Flows.md) -- Functional flows (public + admin)
 - [`DTO.md`](./docs/06-DTO.md) -- DTO information
+- [`Events.md`](./docs/07-Events.md) -- Events information
+- [`Notification.md`](./docs/08-Notification.md) -- Notification information
+- [`Tests.md`](./docs/09-Tests.md) -- Tests information
 
 ---
 
@@ -212,6 +215,22 @@ All OpenAPI documentation configuration is centralized in the `OpenApiConfig.jav
 		# --- Security Configuration ---
 		SPRING_SECURITY_USER_NAME=user-example
 		SPRING_SECURITY_USER_PASSWORD=password-example
+
+		# --- Spring SMTP Server Configuration ---
+		SPRING_MAIL_HOST=email-host
+		SPRING_MAIL_PORT=1025
+		SPRING_MAIL_USERNAME=no-reply@example.com
+
+		# --- Notification Service Configuration ---
+
+		NOTIFICATION_ENABLED=true
+		NOTIFICATIONS_CHANNELS=EMAIL
+
+		TELEGRAM_BOT_TOKEN=token-example
+		TELEGRAM_CHAT_ID=id-example
+		TELEGRAM_API_BASE_URL=https://api.telegram.org
+
+		EMAIL_RECIPIENT=email@example.com
 		```
 3. Start the infrastructure with Docker Compose:
 	 ```sh
@@ -255,7 +274,7 @@ It focuses on event-driven design, modular structure and clean separation of con
 
 ## Project status
 
-MVP v1.0.0 in progress
+v1.2.0 in progress
 
 ## License
 
