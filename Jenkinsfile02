@@ -9,6 +9,10 @@ pipeline {
     stages {
         stage('Checkout') {
             steps {
+                sh 'mkdir -p /app'
+                sh 'cd /app'
+            }
+            steps {
                 git branch: 'main',
                 credentialsId: 'Jenkins-lab',
                 url: 'https://github.com/raullopezpenalva/contact-service.git'
