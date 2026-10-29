@@ -8,6 +8,8 @@ import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicInteger;
 import jakarta.validation.Validation;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.mock.web.*;
 import org.springframework.test.util.ReflectionTestUtils;
 import static org.junit.jupiter.api.Assertions.*;
@@ -64,6 +66,15 @@ class HardeningTest {
             var response=new MockHttpServletResponse();
             f.doFilter(r,response,(a,b)->{});assertEquals(200,response.getStatus());
         }
+    }
+    @ParameterizedTest
+    @ValueSource(strings={"example.com", "abc", "999.1.1.1", "1.2.3", "01.2.3.4", "::gg",
+        "::1%lo", "192.0.2.1,192.0.2.2", " 192.0.2.1", "2001:db8:::1"})
+    void malformedTrustedHeadersNeverBecomeTheClientAddress(String header) throws Exception {
+        var r=request("/api/v1/contact/messages"); r.setRemoteAddr("10.0.0.2");
+        r.addHeader("X-Real-IP",header);
+        filter().doFilter(r,new MockHttpServletResponse(),(a,b) ->
+            assertEquals("10.0.0.2",((jakarta.servlet.http.HttpServletRequest)a).getRemoteAddr()));
     }
     @Test void adminQuotaIsSeparateAndOtherRoutesPass() throws Exception {
         var f=filter();

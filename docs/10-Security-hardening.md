@@ -79,3 +79,48 @@ rotation in the deployment host. Never enable request Authorization logging.
 proxy clients, public/admin separation, known/unknown request lengths, validation,
 and actual Spring Security authentication and failure logging. Existing contact
 integration tests verify persistence and notifications still work.
+
+## Error contract, identity and route policy (#43)
+
+The early filter resolves the client once and wraps `getRemoteAddr()` before
+quotas/controllers. Stored sourceIP and quota keys now agree. Exact configured
+trusted peers may supply a single valid X-Real-IP literal; malformed, multiple,
+hostname, scoped IPv6 or untrusted headers fall back to the original peer.
+IPv4/IPv6 literals are canonicalized, so equivalent IPv6 spellings share a quota.
+No DNS lookup is performed for forwarding-header values. X-Forwarded-For and
+Forwarded never define application identity. The original socket peer remains
+an internal request attribute, not a new caller-controlled identity interface.
+
+Application, quota, authentication, access-denied, firewall and container error
+dispatches use the ApiError JSON contract. `requestId` is a server-generated UUID,
+also returned as X-Request-ID. Messages/details are fixed safe values; parser
+causes, rejected values, SQL, exception text and query strings are omitted. Error
+paths use known route templates, or `/` for unmatched routes, rather than echoing
+arbitrary path values. This changes the old free-form error details/path behavior;
+clients must consume status and documented fields, not parse exception messages.
+Error responses use Cache-Control: no-store. Diagnostic events include requestId,
+status/category and exception type without printing raw causes, stack traces,
+credentials, tokens or caller-supplied request IDs. Rate-limit logs identify the
+scope and requestId instead of recording client IPs.
+
+The explicit anonymous allowlist is POST /api/v1/contact/messages and GET
+/actuator/health. Existing GET list/detail and PATCH status admin routes still
+require Basic authentication in this intermediate change; JWT/ADMIN migration
+remains in #44–#48. Other routes/methods are denied (401 anonymous, 403 authenticated).
+Only internal ERROR dispatch to /error is permitted for sanitized rendering;
+FORWARD or ERROR dispatch to an admin route does not bypass authentication.
+Actuator exposes only health status, with no components/details.
+
+Swagger/OpenAPI are disabled by default. For isolated local development only,
+activate the `local` profile and set `SECURITY_LOCAL_DOCS_ENABLED=true`,
+`SPRINGDOC_API_DOCS_ENABLED=true` and `SPRINGDOC_SWAGGER_UI_ENABLED=true`.
+The route permission additionally requires a local/test profile. Never activate
+these development profiles in production. Auth routes remain unavailable until
+their later reviewed implementation; this PR creates no login endpoint.
+
+SecurityContractIT verifies HTTP spoofing/canonicalization with real persistence,
+error/log redaction, correlated status contracts, denied routes and dispatches,
+minimal health, and unchanged authentication boundaries. The isolated PostgreSQL
+runtime smoke validates the same route/error/attribution behavior in the image.
+Live nginx-proxy/homelab remains separately maintained; #43 changes no production
+proxy configuration or deployment.

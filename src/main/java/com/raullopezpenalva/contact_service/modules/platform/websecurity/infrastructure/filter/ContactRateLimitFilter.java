@@ -3,10 +3,14 @@ package com.raullopezpenalva.contact_service.modules.platform.websecurity.infras
 import java.io.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.slf4j.MDC;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 import com.raullopezpenalva.contact_service.modules.platform.websecurity.application.RateLimitService;
+import com.raullopezpenalva.contact_service.modules.platform.websecurity.infrastructure.http.RequestMetadata;
+import com.raullopezpenalva.contact_service.modules.platform.websecurity.infrastructure.http.SecurityErrorWriter;
+import com.raullopezpenalva.contact_service.modules.platform.websecurity.infrastructure.http.TrustedClientAddress;
 import jakarta.servlet.*;
 import jakarta.servlet.http.*;
 
@@ -34,28 +38,42 @@ public class ContactRateLimitFilter extends OncePerRequestFilter {
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response,
             FilterChain chain) throws ServletException, IOException {
+        String previousId = MDC.get("requestId");
+        String id = RequestMetadata.requestId(request);
+        response.setHeader("X-Request-ID", id);
+        MDC.put("requestId", id);
+        String client = TrustedClientAddress.resolve(request, trustedProxies);
+        request.setAttribute(ContactRateLimitFilter.class.getName() + ".originalPeer", request.getRemoteAddr());
+        HttpServletRequest resolved = new HttpServletRequestWrapper(request) {
+            @Override public String getRemoteAddr() { return client; }
+        };
+        try { filterResolved(resolved, response, chain); }
+        finally {
+            if (previousId == null) MDC.remove("requestId");
+            else MDC.put("requestId", previousId);
+        }
+    }
+
+    private void filterResolved(HttpServletRequest request, HttpServletResponse response,
+            FilterChain chain) throws ServletException, IOException {
         boolean admin = request.getServletPath().startsWith("/api/v1/admin/")
             || request.getRequestURI().startsWith(request.getContextPath() + "/api/v1/admin/");
         boolean contact = "POST".equals(request.getMethod())
             && (request.getContextPath() + "/api/v1/contact/messages").equals(request.getRequestURI());
         if (!admin && !contact) { chain.doFilter(request, response); return; }
         String ip = request.getRemoteAddr();
-        // Trust only explicitly configured direct peers; Nginx must overwrite X-Real-IP.
-        String realIp = request.getHeader("X-Real-IP");
-        if (java.util.Arrays.stream(trustedProxies.split(",")).map(String::trim).anyMatch(request.getRemoteAddr()::equals) && realIp != null
-                && realIp.length() <= 45 && realIp.matches("[0-9a-fA-F:.]+")) ip = realIp;
         if (!limiter.allowRequest((admin ? "admin:" : "contact:") + ip,
                 admin ? adminLimit : publicLimit, admin ? adminWindow : publicWindow)) {
-            log.warn("Rate limit exceeded for ip={}, scope={}", ip, admin ? "admin" : "contact");
+            log.warn("Rate limit exceeded requestId={}, scope={}", RequestMetadata.requestId(request), admin ? "admin" : "contact");
             response.setHeader("Retry-After", Long.toString(admin ? adminWindow : publicWindow));
-            reject(response, 429, "Too many requests"); return;
+            SecurityErrorWriter.write(request, response, 429, "Too many requests"); return;
         }
         if (contact) {
             if (request.getContentLengthLong() > maxBytes) {
-                reject(response, 413, "Request too large"); return;
+                SecurityErrorWriter.write(request, response, 413, "Request too large"); return;
             }
             byte[] body = request.getInputStream().readNBytes(maxBytes + 1);
-            if (body.length > maxBytes) { reject(response, 413, "Request too large"); return; }
+            if (body.length > maxBytes) { SecurityErrorWriter.write(request, response, 413, "Request too large"); return; }
             ByteArrayInputStream input = new ByteArrayInputStream(body);
             HttpServletRequest wrapped = new HttpServletRequestWrapper(request) {
                 @Override public ServletInputStream getInputStream() {
@@ -72,10 +90,5 @@ public class ContactRateLimitFilter extends OncePerRequestFilter {
             };
             chain.doFilter(wrapped, response);
         } else chain.doFilter(request, response);
-    }
-    private void reject(HttpServletResponse response, int status, String message) throws IOException {
-        response.setStatus(status);
-        response.setContentType("application/json");
-        response.getWriter().write("{\"error\":\"" + message + "\"}");
     }
 }

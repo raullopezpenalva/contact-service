@@ -12,6 +12,7 @@ public class AuthenticationFailureLogger {
     @EventListener
     public void onFailure(AbstractAuthenticationFailureEvent event) {
         // Never include credentials, authorization headers or user-supplied usernames.
-        log.warn("Admin authentication failed: {}", event.getException().getClass().getSimpleName());
+        log.warn("Admin authentication failed requestId={}, errorType={}",
+            org.slf4j.MDC.get("requestId"), event.getException().getClass().getSimpleName());
     }
 }

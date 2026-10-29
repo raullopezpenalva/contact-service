@@ -77,7 +77,7 @@ public class ContactPublicController {
     public ResponseEntity<ContactMessageResponse> create(@Valid @RequestBody CreateContactMessageRequest request, HttpServletRequest httpRequest) {
         
         ClientContext clientContext = new ClientContext(
-            httpRequest.getHeader("X-Forwarded-For") != null ? httpRequest.getHeader("X-Forwarded-For") : httpRequest.getRemoteAddr(),
+            httpRequest.getRemoteAddr(),
             httpRequest.getHeader("User-Agent")
         );
         ContactMessageResponse response = contactService.saveMessage(request, clientContext);

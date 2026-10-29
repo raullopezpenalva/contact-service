@@ -107,3 +107,15 @@ and admin authentication, without secrets, published ports or real notifications
 Standalone Docker builds run the full verify lifecycle unless explicitly skipping
 tests already passed on the same revision. Release publication waits for the
 shared workflow, including the image smoke job, to succeed.
+
+## HTTP security contract (#43)
+
+SecurityContractIT keeps the real controller, filter, Spring Security and H2
+persistence, mocking only notification infrastructure/events. It proves agreement
+between quotas and stored IPv4/IPv6 attribution, rejection of spoofed/multiple
+forwarding headers, generated correlation IDs, safe 400/401/403/404/413/415/429/500
+errors and diagnostic logs, denied routes/methods/dispatches, and minimal health.
+HardeningTest additionally rejects malformed numeric/header variants without DNS
+resolution. The image smoke repeats representative errors/attribution checks
+against actual PostgreSQL. No external notifications or production credentials
+are used. This intermediate work does not claim managed users or JWT are ready.

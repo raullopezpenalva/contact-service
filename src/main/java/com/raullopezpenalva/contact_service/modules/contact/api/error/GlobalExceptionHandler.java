@@ -2,131 +2,81 @@ package com.raullopezpenalva.contact_service.modules.contact.api.error;
 
 import java.time.Instant;
 import java.util.List;
-
+import java.util.Set;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
+import org.springframework.web.HttpMediaTypeNotSupportedException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
-
+import org.springframework.web.servlet.resource.NoResourceFoundException;
 import com.raullopezpenalva.contact_service.modules.contact.application.exception.ResourceNotFoundException;
-
+import com.raullopezpenalva.contact_service.modules.platform.websecurity.infrastructure.http.RequestMetadata;
 import jakarta.servlet.http.HttpServletRequest;
 
 @RestControllerAdvice
 public class GlobalExceptionHandler {
+    private static final Logger log = LoggerFactory.getLogger(GlobalExceptionHandler.class);
+    private static final Set<String> FIELDS = Set.of("email", "subject", "content", "status", "adminNote");
+    private static final Set<String> PARAMETERS = Set.of("id", "status", "page", "size");
 
-    // Handles validation errors for @Valid annotated request bodies
     @ExceptionHandler(MethodArgumentNotValidException.class)
-    public ResponseEntity<ApiError> handleValidation(
-        MethodArgumentNotValidException ex,
-        HttpServletRequest request
-    ) {
+    public ResponseEntity<ApiError> handleValidation(MethodArgumentNotValidException ex, HttpServletRequest request) {
         var details = ex.getBindingResult().getFieldErrors().stream()
-            .map(error -> new FieldErrorItem(
-                error.getField(),
-                error.getDefaultMessage()
-            ))
-            .toList();
-        
-        var body = new ApiError(
-            Instant.now().toString(),
-            HttpStatus.BAD_REQUEST.value(),
-            HttpStatus.BAD_REQUEST.getReasonPhrase(),
-            "Validation failed for one or more fields",
-            request.getRequestURI(),
-            details
-        );
-        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(body);
+            .map(error -> new FieldErrorItem(FIELDS.contains(error.getField()) ? error.getField() : "requestBody",
+                switch (error.getCode() == null ? "" : error.getCode()) {
+                    case "NotNull", "NotBlank" -> "Field is required";
+                    case "Size" -> "Invalid field length";
+                    case "Email" -> "Invalid email address";
+                    default -> "Invalid field value";
+                })).distinct().toList();
+        return error(ex, request, HttpStatus.BAD_REQUEST, "Validation failed for one or more fields", details);
     }
-    
-    // Handles malformed JSON request bodies
+
     @ExceptionHandler(HttpMessageNotReadableException.class)
-    public ResponseEntity<ApiError> handleMalformedJson(
-        HttpMessageNotReadableException ex,
-        HttpServletRequest request
-    ) {
-        var details = List.of(new FieldErrorItem(
-            "requestBody",
-            "Malformed JSON: " + ex.getMostSpecificCause().getMessage()
-        ));
-        var body = new ApiError(
-            Instant.now().toString(),
-            HttpStatus.BAD_REQUEST.value(),
-            HttpStatus.BAD_REQUEST.getReasonPhrase(),
-            "Malformed JSON request",
-            request.getRequestURI(),
-            details
-        );
-        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(body);
+    public ResponseEntity<ApiError> handleMalformedJson(HttpMessageNotReadableException ex, HttpServletRequest request) {
+        return error(ex, request, HttpStatus.BAD_REQUEST, "Malformed JSON request", List.of());
     }
 
-    // Handles type mismatch errors for request parameters
     @ExceptionHandler(MethodArgumentTypeMismatchException.class)
-    public ResponseEntity<ApiError> handleTypeMismatch(
-        MethodArgumentTypeMismatchException ex,
-        HttpServletRequest request
-    ) {
-        var details = List.of(new FieldErrorItem(
-            ex.getName(),
-            ex.getName().equals("status")
-                ? "Invalid status value: " + ex.getValue() + ". Expected values are: NEW, READ, ARCHIVED, SPAM, NOTIFICATION_FAILED"
-                : (ex.getName().equals("page") || ex.getName().equals("size"))
-                    ? "Invalid pagination parameter: " + ex.getValue() + ". Expected a non-negative integer."
-                    : "Invalid value: " + ex.getValue()
-        ));
-        var body = new ApiError(
-            Instant.now().toString(),
-            HttpStatus.BAD_REQUEST.value(),
-            HttpStatus.BAD_REQUEST.getReasonPhrase(),
-            "Status Type mismatch error",
-            request.getRequestURI(),
-            details
-        );
-        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(body);
+    public ResponseEntity<ApiError> handleTypeMismatch(MethodArgumentTypeMismatchException ex, HttpServletRequest request) {
+        String name = PARAMETERS.contains(ex.getName()) ? ex.getName() : "requestParameter";
+        return error(ex, request, HttpStatus.BAD_REQUEST, "Invalid request parameter",
+            List.of(new FieldErrorItem(name, "Invalid parameter value")));
     }
 
-    // Handles resource not found exceptions
     @ExceptionHandler(ResourceNotFoundException.class)
-    public ResponseEntity<ApiError> handleResourceNotFound(
-        ResourceNotFoundException ex,
-        HttpServletRequest request
-    ) {
-        var details = List.of(new FieldErrorItem(
-            "id",
-            "The specified resource was not found"
-        ));
-        ApiError body = new ApiError(
-            Instant.now().toString(),
-            HttpStatus.NOT_FOUND.value(),
-            HttpStatus.NOT_FOUND.getReasonPhrase(),
-            ex.getMessage(),
-            request.getRequestURI(),
-            details
-        );
-        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(body);
+    public ResponseEntity<ApiError> handleResourceNotFound(ResourceNotFoundException ex, HttpServletRequest request) {
+        return error(ex, request, HttpStatus.NOT_FOUND, "The specified resource was not found", List.of());
     }
 
-    // Handles all other uncaught exceptions
+    @ExceptionHandler(NoResourceFoundException.class)
+    public ResponseEntity<ApiError> handleMissingRoute(NoResourceFoundException ex, HttpServletRequest request) {
+        return error(ex, request, HttpStatus.NOT_FOUND, "The specified resource was not found", List.of());
+    }
+
+    @ExceptionHandler(HttpMediaTypeNotSupportedException.class)
+    public ResponseEntity<ApiError> handleUnsupportedMedia(HttpMediaTypeNotSupportedException ex, HttpServletRequest request) {
+        return error(ex, request, HttpStatus.UNSUPPORTED_MEDIA_TYPE, "Unsupported media type", List.of());
+    }
+
     @ExceptionHandler(Exception.class)
-    public ResponseEntity<ApiError> handleGenericException(
-        Exception ex,
-        HttpServletRequest request
-    ) {
-        var details = List.of(new FieldErrorItem(
-            "error",
-            ex.getMessage()
-        ));
-        var body = new ApiError(
-            Instant.now().toString(),
-            HttpStatus.INTERNAL_SERVER_ERROR.value(),
-            HttpStatus.INTERNAL_SERVER_ERROR.getReasonPhrase(),
-            "An unexpected error occurred",
-            request.getRequestURI(),
-            details
-        );
-        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(body);
+    public ResponseEntity<ApiError> handleGenericException(Exception ex, HttpServletRequest request) {
+        return error(ex, request, HttpStatus.INTERNAL_SERVER_ERROR, "An unexpected error occurred", List.of());
+    }
+
+    private ResponseEntity<ApiError> error(Exception ex, HttpServletRequest request, HttpStatus status,
+            String message, List<FieldErrorItem> details) {
+        String id = RequestMetadata.requestId(request);
+        // Exception messages/causes and rejected values may contain secrets or user data.
+        if (status.is5xxServerError()) log.error("Request failed requestId={}, status={}, errorType={}", id, status.value(), ex.getClass().getSimpleName());
+        else log.warn("Request rejected requestId={}, status={}, errorType={}", id, status.value(), ex.getClass().getSimpleName());
+        return ResponseEntity.status(status).header("X-Request-ID", id).header("Cache-Control", "no-store")
+            .body(new ApiError(Instant.now().toString(), status.value(), status.getReasonPhrase(),
+                message, RequestMetadata.path(request), details, id));
     }
 }
