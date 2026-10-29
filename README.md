@@ -175,6 +175,7 @@ Projects documentation is located in `/docs`:
 - [`Events.md`](./docs/07-Events.md) -- Events information
 - [`Notification.md`](./docs/08-Notification.md) -- Notification information
 - [`Tests.md`](./docs/09-Tests.md) -- Tests information
+- [Backlog and release readiness](./docs/11-Backlog-and-release-readiness.md) -- Historical ideas, current findings, and release/deployment gates
 
 ---
 
