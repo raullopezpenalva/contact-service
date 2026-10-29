@@ -177,6 +177,8 @@ Projects documentation is located in `/docs`:
 - [`Notification.md`](./docs/08-Notification.md) -- Notification information
 - [`Tests.md`](./docs/09-Tests.md) -- Tests information
 - [Backlog and release readiness](./docs/11-Backlog-and-release-readiness.md) -- Historical ideas, current findings, and release/deployment gates
+- [Users/JWT design](./docs/security/001-admin-users-jwt.md) -- Architecture and migration contract approved in #42
+- [Admin API/security contract](./docs/security/002-admin-auth-contract.md) -- Approved target routes, token lifecycle and safe errors; implementation tracked in #43–#48
 
 ---
 
