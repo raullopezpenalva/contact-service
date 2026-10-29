@@ -1,63 +1,35 @@
 package com.raullopezpenalva.contact_service.modules.platform.websecurity.application;
 
-import java.time.Instant;
-import java.util.concurrent.ConcurrentHashMap;
-
-import org.springframework.beans.factory.annotation.Value;
+import java.time.Clock;
+import java.util.HashMap;
+import java.util.Map;
 import org.springframework.stereotype.Service;
 
+/** Single-instance, bounded fixed-window limiter. */
 @Service
 public class RateLimitService {
-    private final int maxRequests;
-    private final long windowSeconds;
-    private final ConcurrentHashMap<String, ClientRateLimitState> clients;
+    private final Clock clock;
+    private final Map<String, Window> clients = new HashMap<>();
+    private static final int MAX_CLIENTS = 10000;
+    public RateLimitService() { this(Clock.systemUTC()); }
+    public RateLimitService(Clock clock) { this.clock = clock; }
 
-    public RateLimitService(
-        @Value("${app.security.rate-limit.contactrequest.max-requests:5}") int maxRequests,
-        @Value("${app.security.rate-limit.contactrequest.window-seconds:600}") long windowSeconds
-    ) {
-        this.maxRequests = maxRequests;
-        this.windowSeconds = windowSeconds;
-        this.clients = new ConcurrentHashMap<>();
+    public synchronized boolean allowRequest(String key, int limit, long seconds) {
+        long now = clock.millis();
+        clients.entrySet().removeIf(e -> e.getValue().expiresAt <= now);
+        Window window = clients.get(key);
+        if (window == null) {
+            if (clients.size() >= MAX_CLIENTS) return false;
+            window = new Window(now + seconds * 1000);
+            clients.put(key, window);
+        }
+        if (window.count >= limit) return false;
+        window.count++;
+        return true;
     }
-
-    public boolean allowRequest(String clientKey) {
-        Instant now = Instant.now();
-
-        ClientRateLimitState state = clients.compute(clientKey, (key, currentState ) -> {
-            if (currentState == null || hasWindowExpired(currentState, now)) {
-                return new ClientRateLimitState(1, now);
-            } else {
-                currentState.incrementRequestCount();
-                return currentState;
-            }
-        });
-        return state.getRequestCount() <= maxRequests;
-    }
-
-    private boolean hasWindowExpired(ClientRateLimitState state, Instant now) {
-        return now.isAfter(state.getWindowStart().plusSeconds(windowSeconds));
-    }
-
-    private static final class ClientRateLimitState {
-        private int requestCount;
-        private final Instant windowStart;
-
-        public ClientRateLimitState(int requestCount, Instant windowStart) {
-            this.requestCount = requestCount;
-            this.windowStart = windowStart;
-        }
-
-        public int getRequestCount() {
-            return requestCount;
-        }
-
-        public Instant getWindowStart() {
-            return windowStart;
-        }
-
-        public void incrementRequestCount() {
-            this.requestCount++;
-        }
+    private static class Window {
+        final long expiresAt;
+        int count;
+        Window(long expiresAt) { this.expiresAt = expiresAt; }
     }
 }

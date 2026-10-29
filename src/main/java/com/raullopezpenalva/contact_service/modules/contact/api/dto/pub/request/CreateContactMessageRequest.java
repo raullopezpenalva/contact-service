@@ -8,7 +8,7 @@ public class CreateContactMessageRequest {
 
 	@NotBlank(message = "Email is required")
 	@Email(message = "Email should be valid")
-	@Size(min = 5, max = 320, message = "Email must be between 5 and 320 characters")
+	@Size(min = 5, max = 254, message = "Email must be between 5 and 254 characters")
 	private String email;
 
 	@NotBlank(message = "Subject is required")

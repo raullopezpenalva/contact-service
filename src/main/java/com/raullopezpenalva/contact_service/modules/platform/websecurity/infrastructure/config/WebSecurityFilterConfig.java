@@ -16,8 +16,8 @@ public class WebSecurityFilterConfig {
         FilterRegistrationBean<ContactRateLimitFilter> registration = new FilterRegistrationBean<>();
         
         registration.setFilter(contactRateLimitFilter);
-        registration.addUrlPatterns("/api/v1/contact/messages");
-        registration.setOrder(1);
+        registration.addUrlPatterns("/api/v1/*");
+        registration.setOrder(-200);
 
         return registration;
     }
