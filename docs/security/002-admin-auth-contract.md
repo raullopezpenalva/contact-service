@@ -1,6 +1,6 @@
-# Proposed admin authentication API and error contract
+# Admin authentication API and error contract
 
-**Status:** proposed with [ADR 001](001-admin-users-jwt.md), awaiting #42 approval.
+**Status:** approved with [ADR 001](001-admin-users-jwt.md) on 2026-10-29 in #42.
 These routes and guarantees are targets for #43–#48, not v1.3.0 behavior.
 All paths are relative to the existing HTTPS API origin. No public registration,
 refresh endpoint or password-reset email endpoint is introduced.

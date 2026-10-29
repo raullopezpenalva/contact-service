@@ -1,9 +1,10 @@
 # ADR 001: managed administrators and JWT migration
 
-**Status:** proposed; maintainer approval required. **Date:** 2026-10-29.
+**Status:** approved by the maintainer on 2026-10-29. **Date:** 2026-10-29.
 **Tracking:** #42, part of #41. This document changes no runtime behavior.
-Approval must be recorded explicitly in #42; opening or merging a documentation
-PR alone does not approve an unmentioned implementation or production cutover.
+Raúl explicitly approved the concrete PR #52 proposal in the task; the decision
+is recorded in [#42](https://github.com/raullopezpenalva/contact-service/issues/42#issuecomment-6505160359).
+This approves the design, not production cutover, releases or maintainer-only merges.
 
 ## Context and alternatives
 
@@ -23,14 +24,14 @@ The production release remains v1.3.0 until a separate maintainer-operated cutov
 | Local managed users with Spring Security JWT | Fits the requested small private admin API and current deployment | This service owns credential/session/key lifecycle; recommended MVP |
 | Continue shared Basic authentication | No migration | Does not satisfy managed identities/JWT; only the pre-cutover baseline |
 
-## Proposed ownership and clients
+## Approved ownership and clients
 
 Extend **existing** `modules/platform/websecurity` with its own API, application,
 domain and persistence adapters for accounts/sessions. Add no module or broker.
 The existing contact SecurityConfig composes Spring security beans/policies;
 account repositories stay inside websecurity and are never read by contact or
 notification. Contact DTOs/events and notification ownership do not change.
-This is a new persistence responsibility inside websecurity and requires approval.
+This new persistence responsibility inside websecurity is part of the approval.
 
 Support CLI clients and a future private same-origin browser client. Building that
 UI is out of scope. No public signup, social login, password-reset email, general
@@ -155,8 +156,8 @@ before any DB recovery. No automatic dump restore or destructive down migration.
 
 ## Delivery order and release gates
 
-1. **#42:** maintainer records approval or changes to this proposal/API contract.
-   A proposed document is not an implementation approval.
+1. **#42:** maintainer approval recorded on 2026-10-29 for this ADR/API contract.
+   Implementation and its regression evidence remain in the child issues.
 2. **#43:** sanitize errors, unify identity attribution and explicit route policy
    while preserving Basic-protected existing admin behavior until final cutover.
 3. **#44:** migrations, accounts, password hashing and controlled operator tooling.
