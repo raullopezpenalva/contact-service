@@ -57,10 +57,14 @@ PRs do not authenticate to GHCR, publish images, create tags/releases or deploy.
 Required-check settings may additionally require **Tests / Runtime image smoke**,
 selecting GitHub's exact displayed check name.
 
-Release publication rebuilds the verified source before pushing version/latest
-tags; it does not promote the exact smoke-tested digest. Base tags can change
-between builds. Record and validate the published digest before production rather
-than assuming source-level CI guarantees an identical image or deploying latest.
+Release verification exports the successfully smoke-tested image as a one-day
+workflow artifact. The publication job downloads and loads that archive, then
+tags and pushes the same image without rebuilding against potentially changed
+base tags. PR/manual verification does not export the archive by default. Record
+the published digest before rollout rather than deploying latest automatically.
+The current Ubuntu release runner builds a single AMD64 image; confirm production
+architecture matches it. The recipe is also tested locally on ARM64, but this
+workflow does not publish a multi-platform image.
 
 Production TLS, proxy trust, external SMTP acceptance/bounces, existing database
 compatibility/backups and rollback remain deployment checks for the maintainer.

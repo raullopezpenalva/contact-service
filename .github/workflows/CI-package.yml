@@ -15,6 +15,8 @@ env:
 jobs:
   test:
     uses: ./.github/workflows/verify.yml
+    with:
+      export_image: true
     permissions:
       contents: read
 
@@ -39,12 +41,17 @@ jobs:
         id: extract_tag
         run: echo "TAG=${GITHUB_REF##*/}" >> "$GITHUB_ENV"
 
-      - name: Build Docker Images
+      - name: Download smoke-tested runtime image
+        uses: actions/download-artifact@v4
+        with:
+          name: verified-runtime-${{ github.run_id }}-${{ github.run_attempt }}
+          path: verified-image
+
+      - name: Tag verified image for publication
         run: |
-          docker build --build-arg SKIP_TESTS=true \
-            -t "$REGISTRY/$IMAGE_NAME:$TAG" \
-            -t "$REGISTRY/$IMAGE_NAME:latest" \
-            .
+          gzip --decompress --stdout verified-image/runtime-image.tar.gz | docker load
+          docker tag contact-service:ci-smoke "$REGISTRY/$IMAGE_NAME:$TAG"
+          docker tag contact-service:ci-smoke "$REGISTRY/$IMAGE_NAME:latest"
 
       - name: Push Docker Images to GHCR
         run: |
