@@ -34,6 +34,22 @@ failures. NotificationService still catches gateway failures, records FAILED and
 keeps them isolated from the public contact response. A public request accepted
 with 201 does not imply that notification delivery has succeeded.
 
+### SMTP acceptance versus inbox delivery
+
+For email, SENT means JavaMailSender completed submission to the configured SMTP
+provider without an exception. It does not prove acceptance by the recipient's
+mail server, inbox placement, or that the recipient read the message. A provider
+can accept submission and later return a non-delivery report, including a remote
+`554 5.7.1` policy rejection. That later bounce does not reach this gateway call
+and will not automatically change SENT to FAILED or trigger retries.
+
+The #37 regression covers both MIME construction and submission failures through
+the real email adapter/channel/orchestration, including safe diagnostic logging.
+The original swallowed-exception defect (E1) was fixed in merged PR #36. Bounce
+ingestion, delivery webhooks, DNS authentication checks and recipient-provider
+filtering are separate deliverability work. Do not repeatedly resend a permanent
+policy rejection or report SMTP acceptance as verified inbox delivery.
+
 ## Configuration
 
 | Property | Environment variable | Default |

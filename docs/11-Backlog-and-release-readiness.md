@@ -7,10 +7,13 @@ Assessment date: 2026-10-29. Baseline: `main` at `c1229b6`, following PRs
 This is an assessment and backlog, not approval to implement the ideas below.
 
 Follow-up: the maintainer subsequently approved #26's scheduled retry design.
-Its implementation corrects E1's suppressed email failure and adds bounded
+Merged PR #36 corrects E1's suppressed email failure and adds bounded
 FAILED-delivery retries; see [notification retries](12-Notification-retries.md).
 The assessment below preserves the original baseline findings. E2's runtime-image
 access and the live deployment gates are not resolved by notification retries.
+Issue #37 adds explicit boundary regressions and documents the distinction between
+SMTP acceptance and inbox delivery. The original E1 code defect is resolved in
+main; subsequent provider bounces remain outside synchronous failure tracking.
 
 ## Recommendation
 
