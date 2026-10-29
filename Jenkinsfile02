@@ -1,31 +1,29 @@
-
 pipeline {
     agent {
         docker {
             image 'maven:3.9.6-eclipse-temurin-21'
         }
     }
-    
+
     stages {
         stage('Checkout') {
             steps {
-                sh 'mkdir -p /app'
-                sh 'cd /app'
-            }
-            steps {
                 git branch: 'main',
-                credentialsId: 'Jenkins-lab',
-                url: 'https://github.com/raullopezpenalva/contact-service.git'
+                    credentialsId: 'Jenkins-lab',
+                    url: 'https://github.com/raullopezpenalva/contact-service.git'
             }
         }
+
         stage('Compile') {
             steps {
-                sh 'mvn clean package -DskipTests'
+                sh 'mkdir -p /tmp/.m2/repository'
+                sh 'mvn clean package -DskipTests -Dmaven.repo.local=/tmp/.m2/repository'
             }
         }
+
         stage('Unit Tests') {
             steps {
-                sh 'mvn test'
+                sh 'mvn test -Dmaven.repo.local=/tmp/.m2/repository'
             }
         }
     }

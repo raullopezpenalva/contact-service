@@ -6,17 +6,17 @@ import jakarta.validation.constraints.Size;
 
 public class CreateContactMessageRequest {
 
-	@NotBlank
-	@Email
-	@Size(min = 5, max = 254)
+	@NotBlank(message = "Email is required")
+	@Email(message = "Email should be valid")
+	@Size(min = 5, max = 254, message = "Email must be between 5 and 254 characters")
 	private String email;
 
-	@NotBlank
-	@Size(min = 3, max = 120)
+	@NotBlank(message = "Subject is required")
+	@Size(min = 3, max = 120, message = "Subject must be between 3 and 120 characters")
 	private String subject;
 
-	@NotBlank
-	@Size(min = 10, max = 4000)
+	@NotBlank(message = "Content is required")
+	@Size(min = 10, max = 3000, message = "Content must be between 10 and 3000 characters")
 	private String content;
 
 	public CreateContactMessageRequest() {

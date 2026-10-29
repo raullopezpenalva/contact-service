@@ -17,14 +17,14 @@ services:
       - "1080:1080"  # Web UI
       - "1025:1025"  # SMTP
 
-  contact-service:
-    container_name: contact_service
-    build: .
-    restart: unless-stopped
-    env_file:
-      - example.env
-    ports:
-      - "8080:8080"
+  # contact-service:
+  #   container_name: contact_service
+  #   build: .
+  #   restart: unless-stopped
+  #   env_file:
+  #     - example.env
+  #   ports:
+  #     - "8080:8080"
 
 volumes:
   contact-dev-data:
