@@ -33,6 +33,11 @@ NotificationService and channel gateways. Email and Telegram are infrastructure
 adapters; the contact module must not start calling them directly. Delivery
 failures are recorded without breaking the accepted public request flow.
 
+The maintainer-approved #26 scheduler stays inside the notification module and
+reuses failed delivery records through NotificationService. See
+[notification retries](../12-Notification-retries.md) for snapshot compatibility,
+configuration and single-instance limits. This is not a distributed queue.
+
 Preserve the current transaction, asynchronous publication/listener semantics and
 existing event payload contract unless a change is explicitly studied. Do not
 claim after-commit delivery, durable event transport, retries, or distributed

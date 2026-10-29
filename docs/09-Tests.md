@@ -57,7 +57,9 @@ Unknown status values and invalid UUID path parameters return structured 400s.
 This is a behavior-based audit, not a claim of exhaustive coverage. Remaining
 lower-priority gaps include external HTTP/SMTP adapter contract tests, real-server
 streaming/client-disconnect behavior, and production proxy deployment checks.
-Notification retries (#26) are not implemented or tested by this issue.
+The original #30 audit did not implement retries. Subsequent #26 coverage is
+documented in [notification retries](12-Notification-retries.md), including the
+real email adapter failure path and scheduled recovery with no external sends.
 
 ## Database fidelity decision
 

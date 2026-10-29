@@ -6,6 +6,12 @@ Assessment date: 2026-10-29. Baseline: `main` at `c1229b6`, following PRs
 [#33](https://github.com/raullopezpenalva/contact-service/pull/33).
 This is an assessment and backlog, not approval to implement the ideas below.
 
+Follow-up: the maintainer subsequently approved #26's scheduled retry design.
+Its implementation corrects E1's suppressed email failure and adds bounded
+FAILED-delivery retries; see [notification retries](12-Notification-retries.md).
+The assessment below preserves the original baseline findings. E2's runtime-image
+access and the live deployment gates are not resolved by notification retries.
+
 ## Recommendation
 
 There is enough unreleased value to prepare a focused stabilization/security

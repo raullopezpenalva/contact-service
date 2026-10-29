@@ -17,6 +17,7 @@ Contact Service is a Spring Boot microservice designed to handle contact form su
 - **Public REST API** for receiving contact messages (`email`, `subject`, `content`).
 - **Data validation** and secure persistence using PostgreSQL.
 - **Notification system**: Notifies the website owner via Telegram and SMTP email when a new message is received.
+- **Notification retries**: Replays eligible failed deliveries with a configurable attempt budget; see [configuration and single-instance limits](docs/12-Notification-retries.md).
 - **Admin endpoints** (protected):
 	- List messages with filtering and pagination
 	- View message details
