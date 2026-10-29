@@ -94,7 +94,7 @@ Example:
 **Objective:** Manage the lifecycle of a message (read / archive / spam).
 
 ### Endpoint
-- `PATCH /api/v1/admin/contact/messages/{id}`
+- `PATCH /api/v1/admin/contact/messages/{id}/status`
 
 ### Payload (MVP)
 - `status` (required)
