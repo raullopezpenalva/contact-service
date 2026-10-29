@@ -1,143 +1,97 @@
-# 09 — Testing Strategy
+# Testing strategy and coverage audit (#30)
 
-This document describes the testing strategy used in the Contact Service.
+## Running verification
 
-The goal is to ensure correctness of the core logic while keeping the test suite fast and maintainable.
+Use Java 21 and Maven 3.8+ (or the configured devcontainer):
 
-The project currently uses two levels of testing:
-
-- Unit Tests
-- Integration Tests
-
----
-
-# 1. Unit Tests
-
-Unit tests verify small pieces of logic in isolation without starting the Spring application context.
-
-These tests are fast and deterministic.
-
-They focus on:
-
-- Mappers
-- Domain transformations
-- Pure application logic
-
-Unit tests use:
-
-- **JUnit 5**
-- **Mockito (when needed)**
-
-Example unit tests implemented:
+```sh
+mvn -B -ntp clean verify
 ```
-NotificationMessageMapperTest
-ContactMessageCreatedEventMapperTest
+
+No local PostgreSQL, SMTP server, Telegram credentials, or production environment
+files are needed. Integration tests activate the `test` profile, use an in-memory
+H2 database, and replace EmailClient and TelegramClient with Mockito doubles.
+ContactApiIT additionally mocks EventPublisher to assert event publication without
+starting asynchronous notification work. ContactControllerTest retains the real
+asynchronous event/notification flow and waits for persisted terminal delivery
+state with bounded Awaitility polling rather than sleeps.
+
+Surefire runs `*Test`/`*Tests` classes during `test`. Failsafe runs `*IT` classes
+during `integration-test` and checks their results during `verify`. Use `verify`
+for the complete suite: `mvn test` alone omits ContactApiIT. Surefire fails if no
+unit tests are found. Reports are in `target/surefire-reports` and
+`target/failsafe-reports`. A failed integration test fails `verify`.
+
+```sh
+mvn -Dtest=NotificationServiceTest test
+mvn -Dit.test=ContactApiIT verify
 ```
-Example execution:
-````bash
-mvn test
-````
-These tests do **not require Spring Boot to start**, which makes them extremely fast.
 
----
+The former disabled ContactServiceApplicationTests smoke test was removed because
+AdminSecurityTest, ContactControllerTest, and ContactApiIT already load the real
+Spring Boot context with safe infrastructure doubles and meaningful assertions.
+There are no intentionally disabled tests in the resulting suite.
 
-# 2. Integration Tests
+## Audit and prioritized coverage
 
-Integration tests verify that multiple layers of the application work correctly together.
+The audit reviewed controllers, DTO constraints, exception handling, application
+services, domain models, repository mappings, Spring Security, web filters,
+notification channel configuration, and build/test discovery.
 
-These tests start the Spring Boot context and exercise the application through its HTTP API.
+| Priority | Area / original gap | Verification after this change |
+| --- | --- | --- |
+| High | Public validation and error contract lacked HTTP regression tests | ContactApiIT checks malformed JSON, missing/invalid fields, structured 400 errors and absence of persistence/events/notification side effects |
+| High | Persistence/event handoff only indirectly covered | ContactApiIT checks NEW message persistence and matching published event; ContactControllerTest checks real async handoff, persisted delivery and notification failure isolation |
+| High | Admin detail/update/list had no behavioral integration coverage | ContactApiIT checks full detail, status filtering, pagination, summary content exclusion, persisted status/note/timestamp, missing IDs, invalid enum/UUID and rejected unauthorized updates |
+| High | Persisted update timestamp was not actually updated | Regression exposed `updatable=false` on updatedAt; corrected column mapping and verified by reloading the entity |
+| High | Notification orchestration/configuration lacked isolated tests | NotificationServiceTest checks pending-before-send/final-state persistence, gateway selection, disabled sending, missing gateways, swallowed delivery failures, attempts and configured channel parsing |
+| High | Public/admin security | Existing HardeningTest and AdminSecurityTest retained: quota concurrency/expiry/capacity, body limits, proxy trust, independent quotas, Basic Auth and failure logs without secrets |
+| Medium | Mappers and delivery domain | Existing mapper tests and NotificationDeliveryTest retained |
+| Medium | Test discovery and disabled smoke test | Failsafe bound to verify, Surefire fails on empty suite; redundant disabled smoke test removed |
+| Medium | PRs received no automated verification | PR/manual workflows call shared Java 21 Maven verification with retained reports |
 
-Integration tests validate the full flow:
-```
-HTTP request
-↓
-Controller
-↓
-Application Service
-↓
-Repository
-↓
-Domain Event
-↓
-Event Handler
-↓
-Notification Service
-````
+Spring's Pageable resolver defaults nonnumeric page parameters to page zero;
+ContactApiIT documents this contract rather than imposing a new API behavior.
+Unknown status values and invalid UUID path parameters return structured 400s.
 
-The real Telegram client is **not used** during tests.
+This is a behavior-based audit, not a claim of exhaustive coverage. Remaining
+lower-priority gaps include external HTTP/SMTP adapter contract tests, real-server
+streaming/client-disconnect behavior, and production proxy deployment checks.
+Notification retries (#26) are not implemented or tested by this issue.
 
-Instead we mock the notification channel:
-```
-@MockitoBean NotificationChannel
-````
-This allows the system to behave as if notifications were sent while avoiding external API calls.
+## Database fidelity decision
 
----
+H2 in PostgreSQL compatibility mode is sufficient for these fast API/service and
+JPA round-trip regressions, including the timestamp mapping defect. It does not
+prove PostgreSQL SQL, locking, JSON types, migrations, or production schema
+compatibility. This change does not introduce PostgreSQL-specific queries or
+migrations, so Testcontainers is deferred rather than adding a second database
+suite without a concrete database-specific assertion. Add PostgreSQL container
+tests when introducing such behavior. A green H2 suite is not production database
+certification.
 
-# 3. Example Integration Test
+## Pull request and release CI
 
-Example class:
-```
-ContactControllerTest
-````
-Test scenarios implemented:
+`pr-tests.yml` runs on PRs to main when opened, reopened, synchronized, or marked
+ready for review, including fork PRs. It also supports manual workflow_dispatch.
+It calls `verify.yml`, which sets up Java 21, caches Maven dependencies, runs
+`mvn -B -ntp clean verify`, and uploads available Surefire/Failsafe reports even
+when verification fails. Reports are retained for 14 days and available in the
+Actions run's Artifacts section. Compilation failures may produce no test report;
+the Maven step log is then the diagnostic source.
 
-### 1. Successful contact request
+PR runs use read-only contents permission, no repository secrets, no
+pull_request_target, no container publication and no deployment. New runs cancel
+superseded runs for the same PR. The verification job has a 15-minute timeout.
 
-Verifies that:
+The release workflow calls the same verifier before image publication. Its Docker
+build uses SKIP_TESTS=true because verification already passed; standalone Docker
+builds keep SKIP_TESTS=false. This removes repeated test execution while keeping
+release publication dependent on successful verification. Registry write
+permission is limited to the release publication job.
 
-- API returns `201 Created`
-- Message is persisted in the database
-- Notification channel is invoked
-
-### 2. Notification failure
-
-Verifies that:
-
-- API still returns `201 Created`
-- Message is persisted in the database
-- NotificationDelivery is persisted in the database
-- Notification failure does not break the request flow
-
-This behavior ensures that the notification system is **non-blocking**.
-
----
-
-# 4. Running the Tests
-
-Run all tests:
-```
-mvn clean test
-````
-Run a specific test:
-```
-mvn -Dtest=NotificationMessageMapperTest test
-````
-Run the integration test:
-```
-mvn -Dtest=ContactControllerTest test
-````
-
----
-
-# 5. Future Improvements
-
-Possible improvements to the testing strategy:
-
-- Add **Testcontainers** for PostgreSQL
-- Add **integration tests for admin endpoints**
-- Add **validation tests for request payloads**
-- Add **contract tests for external integrations**
-
----
-
-# 6. Test Philosophy
-
-The testing philosophy of this project is:
-
-- **Unit tests for pure logic**
-- **Integration tests for real application flows**
-- **External systems mocked**
-- **Fast feedback during development**
-
-This approach provides a good balance between reliability and development speed.
+After this workflow has run, configure branch protection/rulesets for main to
+require **Tests / Java 21 verification** (workflow: Pull request tests), selecting
+the exact check displayed by GitHub. This repository setting is a maintainer
+follow-up; changing branch protection is not part of this code change. No arbitrary
+coverage-percentage threshold is introduced.
