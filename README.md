@@ -284,3 +284,10 @@ MIT License
 
 See [security hardening](docs/10-Security-hardening.md) for request limits,
 admin protection, proxy trust, security logs and the production deployment template.
+
+### Pull request verification
+
+Pull requests to `main` automatically run Java 21 build and test verification.
+Run `mvn -B -ntp clean verify` locally to execute both unit and integration suites.
+See [testing strategy and coverage audit](docs/09-Tests.md) for prerequisites,
+coverage, CI reports, and the required-check configuration.

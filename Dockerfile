@@ -4,7 +4,8 @@ WORKDIR /app
 
 COPY . .
 
-RUN mvn clean package
+ARG SKIP_TESTS=false
+RUN mvn -B -ntp clean package -DskipTests=${SKIP_TESTS}
 
 FROM dhi.io/eclipse-temurin:21 AS service
 
