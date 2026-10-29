@@ -8,8 +8,12 @@ Use Java 21 and Maven 3.8+ (or the configured devcontainer):
 mvn -B -ntp clean verify
 ```
 
-No local PostgreSQL, SMTP server, Telegram credentials, or production environment
-files are needed. Integration tests activate the `test` profile, use an in-memory
+No preinstalled PostgreSQL, SMTP server, Telegram credentials, or production environment
+files are needed. Full verification requires Docker: AdminIdentityPostgresIT
+starts an isolated PostgreSQL 15 through Testcontainers for migrations and locks.
+Testcontainers allocates temporary published test ports for its JVM connection;
+the separate image smoke scripts use only internal networks and publish no ports.
+Other integration tests activate the `test` profile, use an in-memory
 H2 database, and replace EmailClient and TelegramClient with Mockito doubles.
 ContactApiIT additionally mocks EventPublisher to assert event publication without
 starting asynchronous notification work. ContactControllerTest retains the real
@@ -66,11 +70,11 @@ real email adapter failure path and scheduled recovery with no external sends.
 H2 in PostgreSQL compatibility mode is sufficient for these fast API/service and
 JPA round-trip regressions, including the timestamp mapping defect. It does not
 prove PostgreSQL SQL, locking, JSON types, migrations, or production schema
-compatibility. This change does not introduce PostgreSQL-specific queries or
-migrations, so Testcontainers is deferred rather than adding a second database
-suite without a concrete database-specific assertion. Add PostgreSQL container
-tests when introducing such behavior. A green H2 suite is not production database
-certification.
+compatibility. The original #30 audit deferred Testcontainers because it introduced
+no PostgreSQL-specific behavior. Since #44, AdminIdentityPostgresIT covers database
+migrations, canonical account constraints, operator concurrency and revocation
+transactions against PostgreSQL. See [managed identities](14-Managed-admin-identities.md)
+for full verification, the explicit legacy baseline and operator image checks.
 
 ## Pull request and release CI
 
@@ -104,8 +108,10 @@ The shared workflow builds the Java 21 runtime image after Maven verification an
 runs [isolated PostgreSQL-backed container checks](13-Runtime-image-verification.md).
 `Tests / Runtime image smoke` covers health, message creation, actual persistence
 and admin authentication, without secrets, published ports or real notifications.
-Standalone Docker builds run the full verify lifecycle unless explicitly skipping
-tests already passed on the same revision. Release publication waits for the
+Standalone Docker builds run Java/H2 verification unless explicitly skipping
+tests already passed on the same revision. PostgreSQL-tagged integration tests
+require Docker outside BuildKit and run in the required shared verifier before
+building/publishing. Release publication waits for the
 shared workflow, including the image smoke job, to succeed.
 
 ## HTTP security contract (#43)
