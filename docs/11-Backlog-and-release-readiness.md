@@ -170,3 +170,13 @@ does not justify ignoring a reproduced failure or an unbuildable candidate image
 
 See [testing](09-Tests.md), [security hardening](10-Security-hardening.md), and
 [architecture discussion policy](agents/architecture.md) for implementation work.
+
+## E2 follow-up (#38)
+
+The runtime-image work replaces the credential-dependent DHI runtime with a
+public Java 21 JRE base, excludes private local files from build contexts and
+adds PostgreSQL-backed image smoke verification to the shared PR/release gate.
+See [runtime image verification](13-Runtime-image-verification.md) for execution
+and limits. The original assessment above preserves its baseline findings;
+successful isolated startup does not validate the live production proxy, existing
+database upgrades, SMTP delivery or rollback readiness.

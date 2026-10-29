@@ -1,6 +1,11 @@
 name: Verify
 on:
   workflow_call:
+    inputs:
+      export_image:
+        description: Export the smoke-tested image for release publication
+        type: boolean
+        default: false
 permissions:
   contents: read
 jobs:
@@ -27,3 +32,25 @@ jobs:
             target/failsafe-reports/
           if-no-files-found: ignore
           retention-days: 14
+  container-smoke:
+    name: Runtime image smoke
+    needs: verify
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v6
+      - name: Build runtime image after Maven verification
+        run: docker build --build-arg SKIP_TESTS=true -t contact-service:ci-smoke .
+      - name: Verify runtime against isolated PostgreSQL
+        run: bash scripts/verify-container.sh contact-service:ci-smoke
+      - name: Export verified runtime image
+        if: inputs.export_image
+        run: docker save contact-service:ci-smoke | gzip > runtime-image.tar.gz
+      - name: Retain verified image for release publication
+        if: inputs.export_image
+        uses: actions/upload-artifact@v4
+        with:
+          name: verified-runtime-${{ github.run_id }}-${{ github.run_attempt }}
+          path: runtime-image.tar.gz
+          retention-days: 1
+          compression-level: 0

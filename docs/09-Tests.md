@@ -97,3 +97,13 @@ require **Tests / Java 21 verification** (workflow: Pull request tests), selecti
 the exact check displayed by GitHub. This repository setting is a maintainer
 follow-up; changing branch protection is not part of this code change. No arbitrary
 coverage-percentage threshold is introduced.
+
+## Runtime image smoke verification (#38)
+
+The shared workflow builds the Java 21 runtime image after Maven verification and
+runs [isolated PostgreSQL-backed container checks](13-Runtime-image-verification.md).
+`Tests / Runtime image smoke` covers health, message creation, actual persistence
+and admin authentication, without secrets, published ports or real notifications.
+Standalone Docker builds run the full verify lifecycle unless explicitly skipping
+tests already passed on the same revision. Release publication waits for the
+shared workflow, including the image smoke job, to succeed.

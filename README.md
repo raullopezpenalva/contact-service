@@ -300,3 +300,8 @@ Pull requests to `main` automatically run Java 21 build and test verification.
 Run `mvn -B -ntp clean verify` locally to execute both unit and integration suites.
 See [testing strategy and coverage audit](docs/09-Tests.md) for prerequisites,
 coverage, CI reports, and the required-check configuration.
+
+The shared workflow also builds and checks the runtime image against temporary
+PostgreSQL without external notifications. See
+[runtime image verification](docs/13-Runtime-image-verification.md) for local
+devcontainer commands, required checks and production limitations.
