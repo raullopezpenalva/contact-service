@@ -22,10 +22,12 @@ import org.springframework.context.event.EventListener;
 public class ContactRequestCreatedEventHandler {
 
     private static final Logger log = LoggerFactory.getLogger(ContactRequestCreatedEventHandler.class);
+    private final NotificationDeliveryMapper deliveryMapper;
     private final NotificationService notificationService;
     private final NotificationChannelsResolver notificationChannelsResolver;
 
-    public ContactRequestCreatedEventHandler(NotificationService notificationService, NotificationChannelsResolver notificationChannelsResolver) {
+    public ContactRequestCreatedEventHandler(NotificationService notificationService, NotificationChannelsResolver notificationChannelsResolver, NotificationDeliveryMapper deliveryMapper) {
+        this.deliveryMapper = deliveryMapper;
         this.notificationService = notificationService;
         this.notificationChannelsResolver = notificationChannelsResolver;
     }
@@ -47,7 +49,7 @@ public class ContactRequestCreatedEventHandler {
             
             for (NotificationChannel channel : channels) {
                 
-                NotificationDelivery delivery = NotificationDeliveryMapper.fromEvent(event, channel);
+                NotificationDelivery delivery = deliveryMapper.fromEvent(event, channel);
 
                 
                 log.info("Sending notification via {} channel for eventId={}, contactRequestId={}", channel, event.eventId(), event.contactRequestId());

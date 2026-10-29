@@ -1,13 +1,17 @@
 package com.raullopezpenalva.contact_service.modules.platform.notification.infrastructure.persistence.adapter;
 
 import com.raullopezpenalva.contact_service.modules.platform.notification.application.port.out.NotificationDeliveryRepository;
+import com.raullopezpenalva.contact_service.modules.platform.notification.application.mapper.NotificationPayloadCodec;
 import com.raullopezpenalva.contact_service.modules.platform.notification.domain.model.NotificationChannel;
 import com.raullopezpenalva.contact_service.modules.platform.notification.domain.model.NotificationDelivery;
+import com.raullopezpenalva.contact_service.modules.platform.notification.domain.model.NotificationStatus;
 import com.raullopezpenalva.contact_service.modules.platform.notification.infrastructure.persistence.mapper.NotificationDeliveryPersistenceMapper;
 import com.raullopezpenalva.contact_service.modules.platform.notification.infrastructure.persistence.repository.NotificationDeliveryJpaRepository;
 import org.springframework.stereotype.Repository;
+import org.springframework.data.domain.PageRequest;
 
 import java.util.Optional;
+import java.util.List;
 import java.util.UUID;
 
 @Repository
@@ -17,6 +21,16 @@ public class NotificationDeliveryRepositoryAdapter implements NotificationDelive
 
     public NotificationDeliveryRepositoryAdapter(NotificationDeliveryJpaRepository notificationDeliveryJpaRepository) {
         this.notificationDeliveryJpaRepository = notificationDeliveryJpaRepository;
+    }
+
+    @Override
+    public List<NotificationDelivery> findRetryable(int maxAttempts, int batchSize) {
+        return notificationDeliveryJpaRepository.findRetryable(
+            NotificationStatus.FAILED,
+            maxAttempts,
+            NotificationPayloadCodec.VERSION_ONE_PREFIX + "%",
+            PageRequest.of(0, batchSize))
+            .stream().map(NotificationDeliveryPersistenceMapper::toDomain).toList();
     }
 
     @Override

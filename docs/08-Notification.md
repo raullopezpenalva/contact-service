@@ -276,7 +276,7 @@ This ensures:
 Possible architectural improvements:
 - Message broker integration (Kafka / RabbitMQ)
 - Outbox pattern implementation
-- Retry mechanisms
+- Distributed retry coordination and backoff
 - Structured logging and observability
 
 ---
@@ -284,11 +284,12 @@ Possible architectural improvements:
 
 The system is designed to support reliable notification delivery.
 
-Although retries are not implemented yet, the current design enables:
+Scheduled retries now process eligible FAILED deliveries using versioned JSON
+snapshots and a configurable total-attempt budget. See
+[notification retries](12-Notification-retries.md) for configuration, legacy data
+handling and operational limits. Email adapter failures propagate to delivery
+tracking while remaining isolated from accepted public requests.
 
-- Retry mechanisms based on delivery status
-- Idempotency using eventId + channel
-- Failure tracking through persisted errors
-- Future scheduling of pending deliveries
-
-This prepares the system for production-grade resilience.
+Reusing the same delivery row does not guarantee idempotent external delivery.
+Distributed coordination, crash recovery for PENDING records, durable event
+transport and backoff remain separate future work.

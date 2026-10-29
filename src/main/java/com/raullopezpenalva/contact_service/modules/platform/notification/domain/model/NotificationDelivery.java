@@ -93,13 +93,14 @@ public class NotificationDelivery {
     // Domain behavior methods
 
     public void markAsSent() {
-    this.status = NotificationStatus.SENT;
-    this.updatedAt = Instant.now();
+        this.status = NotificationStatus.SENT;
+        this.lastError = null;
+        this.updatedAt = Instant.now();
     }
 
     public void markAsFailed(String error) {
         this.status = NotificationStatus.FAILED;
-        this.lastError = error;
+        this.lastError = error == null ? null : error.substring(0, Math.min(error.length(), 255));
         this.updatedAt = Instant.now();
     }
 
@@ -111,7 +112,11 @@ public class NotificationDelivery {
     // Business rules
 
     public boolean canRetry() {
-        return this.status.canRetry() && this.attempts < 3;
+        return canRetry(3);
+    }
+
+    public boolean canRetry(int maxAttempts) {
+        return this.status.canRetry() && this.attempts < maxAttempts;
     }
 
     public boolean isSent() {

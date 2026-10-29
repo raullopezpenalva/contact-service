@@ -31,7 +31,7 @@ public class EmailClient {
             helper.setText(body, false);
             mailSender.send(message);
         } catch (Exception e) {
-            e.printStackTrace();
+            throw new IllegalStateException("Email delivery failed", e);
         }
     }
 }

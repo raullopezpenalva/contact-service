@@ -3,33 +3,18 @@ package com.raullopezpenalva.contact_service.modules.platform.notification.appli
 import com.raullopezpenalva.contact_service.modules.contact.domain.events.ContactRequestCreatedEvent;
 import com.raullopezpenalva.contact_service.modules.platform.notification.domain.model.NotificationChannel;
 import com.raullopezpenalva.contact_service.modules.platform.notification.domain.model.NotificationDelivery;
+import org.springframework.stereotype.Component;
 
-public final class NotificationDeliveryMapper {
+@Component
+public class NotificationDeliveryMapper {
+    private final NotificationPayloadCodec payloadCodec;
 
-    private NotificationDeliveryMapper() {
+    public NotificationDeliveryMapper(NotificationPayloadCodec payloadCodec) {
+        this.payloadCodec = payloadCodec;
     }
 
-    public static NotificationDelivery fromEvent(
-        ContactRequestCreatedEvent event,
-        NotificationChannel channel
-    ) {
-
-        String payload = buildPayloadSnapshot(event);
-
-        return NotificationDelivery.createNew(
-                event.eventId(),
-                event.eventType(),
-                channel,
-                payload
-        );
-    }
-
-    private static String buildPayloadSnapshot(ContactRequestCreatedEvent event) {
-        return String.format(
-                "email=%s, subject=%s, message=%s",
-                event.email(),
-                event.subject(),
-                event.message()
-        );
+    public NotificationDelivery fromEvent(ContactRequestCreatedEvent event, NotificationChannel channel) {
+        return NotificationDelivery.createNew(event.eventId(), event.eventType(), channel,
+            payloadCodec.encode(NotificationMessageMapper.toNotificationMessage(event)));
     }
 }
