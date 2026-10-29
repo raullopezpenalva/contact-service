@@ -69,7 +69,7 @@ public class ContactMessage {
     private LocalDateTime createdAt;
 
     @CreationTimestamp
-    @Column(nullable = false, updatable = false)
+    @Column(nullable = false)
     private LocalDateTime updatedAt;
 
     @Column(nullable = true)
