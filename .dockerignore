@@ -12,3 +12,16 @@ README.md
 LICENSE
 
 dev-compose-starter.sh
+
+# Git-ignore does not protect Docker build contexts.
+**/*.env
+**/.env*
+**/*.log
+**/*.pem
+**/*.key
+work/
+outputs/
+.devcontainer/
+.github/
+scripts/
+AGENTS.md
