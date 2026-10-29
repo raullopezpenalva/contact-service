@@ -58,7 +58,8 @@ public class NotificationService {
             log.info("Notification sent successfully for eventId={}", message.getEventId());
         } catch (Exception ex) {
             delivery.markAsFailed(ex.getMessage());
-            log.error("Failed to send notification for eventId={}", message.getEventId(), ex);
+            log.warn("Notification failed for deliveryId={}, eventId={}, channel={}, errorType={}",
+                delivery.getId(), message.getEventId(), delivery.getChannel(), (ex.getCause() == null ? ex : ex.getCause()).getClass().getSimpleName());
         }
         notificationDeliveryRepository.save(delivery);
     }
