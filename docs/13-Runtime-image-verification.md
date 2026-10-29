@@ -66,6 +66,21 @@ The current Ubuntu release runner builds a single AMD64 image; confirm productio
 architecture matches it. The recipe is also tested locally on ARM64, but this
 workflow does not publish a multi-platform image.
 
+The reusable verifier returns the upload's immutable artifact ID. Publication
+downloads that exact ID; it must not recalculate the artifact name from its own
+run attempt. A failed-job-only rerun can reuse a producer from an earlier attempt.
+Missing IDs or missing/expired archives fail safely without rebuilding or selecting
+another image. If the archived image has expired, rerun the full workflow to
+verify and export it again. The original v1.3.0 workflow predates this correction;
+rerun its complete workflow rather than only publication, preserving the tag.
+
+For a non-publishing regression check, manually run `pr-tests.yml` with
+`verify_release_artifact=true`. It exports the verified image, transfers the
+producer's artifact ID across the reusable workflow boundary, and downloads/loads
+that exact archive in a separate job. Re-run only the `Verified image transfer
+check` job to exercise reuse of a producer from a previous attempt. Ordinary PR
+checks keep image export disabled. The manual check never logs into GHCR or pushes.
+
 Production TLS, proxy trust, external SMTP acceptance/bounces, existing database
 compatibility/backups and rollback remain deployment checks for the maintainer.
 This change does not publish a release or authorize production rollout.

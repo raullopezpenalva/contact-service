@@ -41,10 +41,20 @@ jobs:
         id: extract_tag
         run: echo "TAG=${GITHUB_REF##*/}" >> "$GITHUB_ENV"
 
+      - name: Require the verified image artifact identity
+        env:
+          IMAGE_ARTIFACT_ID: ${{ needs.test.outputs.image_artifact_id }}
+        run: |
+          if [[ ! "$IMAGE_ARTIFACT_ID" =~ ^[0-9]+$ ]]; then
+            echo "The verification job did not provide an image artifact ID" >&2
+            exit 1
+          fi
+
       - name: Download smoke-tested runtime image
         uses: actions/download-artifact@v4
         with:
-          name: verified-runtime-${{ github.run_id }}-${{ github.run_attempt }}
+          artifact-ids: ${{ needs.test.outputs.image_artifact_id }}
+          merge-multiple: true
           path: verified-image
 
       - name: Tag verified image for publication

@@ -6,6 +6,10 @@ on:
         description: Export the smoke-tested image for release publication
         type: boolean
         default: false
+    outputs:
+      image_artifact_id:
+        description: Immutable artifact ID of the successfully smoke-tested image
+        value: ${{ jobs.container-smoke.outputs.image_artifact_id }}
 permissions:
   contents: read
 jobs:
@@ -37,6 +41,8 @@ jobs:
     needs: verify
     runs-on: ubuntu-latest
     timeout-minutes: 15
+    outputs:
+      image_artifact_id: ${{ steps.upload_image.outputs.artifact-id }}
     steps:
       - uses: actions/checkout@v6
       - name: Build runtime image after Maven verification
@@ -47,6 +53,7 @@ jobs:
         if: inputs.export_image
         run: docker save contact-service:ci-smoke | gzip > runtime-image.tar.gz
       - name: Retain verified image for release publication
+        id: upload_image
         if: inputs.export_image
         uses: actions/upload-artifact@v4
         with:
