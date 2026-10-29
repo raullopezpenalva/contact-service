@@ -279,3 +279,8 @@ v1.2.0 in progress
 ## License
 
 MIT License
+
+### Production hardening
+
+See [security hardening](docs/10-Security-hardening.md) for request limits,
+admin protection, proxy trust, security logs and the production deployment template.
