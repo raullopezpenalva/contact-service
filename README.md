@@ -1,6 +1,13 @@
 
 # Contact Service
 
+## Working with Codex
+
+Start with [AGENTS.md](AGENTS.md) for repository instructions and the organized
+guides under [docs/agents](docs/agents/workflow.md). Agent builds and tests run in
+the devcontainer; issues and PRs track work, and the maintainer handles merging,
+deployment, tags, and releases.
+
 Contact Service is a Spring Boot microservice designed to handle contact form submissions for a personal website. It provides secure message persistence, administrative management, and notification capabilities, serving both as a real functional backend and a professional portfolio demonstration.
 
 ---
@@ -248,9 +255,9 @@ Unit tests verify isolated components such as mappers and domain transformations
 
 Integration tests start the Spring Boot context and validate the full request flow from the HTTP API down to the event-driven notification system.
 
-Run the test suite with:
+Inside the devcontainer, run the complete test suite with:
 ```
-mvn clean test
+mvn -B -ntp clean verify
 ```
 See [docs/09-Tests.md](./docs/09-Tests.md) for detailed information about the testing strategy.
 
