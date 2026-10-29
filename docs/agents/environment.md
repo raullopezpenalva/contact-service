@@ -70,6 +70,15 @@ directories under `target/` and distinguish passing, failed, and skipped tests.
 Run focused tests while iterating, then the full command before publishing even
 for documentation-only work. Do not add artificial tests for prose changes.
 
+Full verification now requires the devcontainer's Docker connection for the
+isolated PostgreSQL Testcontainers suite. The updated container configuration
+provides TESTCONTAINERS_HOST_OVERRIDE=host.docker.internal for Docker outside
+Docker. Rebuild it or pass that variable when entering an existing container if
+the automatic host detection cannot reach published test ports. Hosted CI uses
+its local Docker daemon without this override. Do not mark database tests skipped
+when Docker is unavailable. BuildKit's image build excludes only postgres-tagged
+tests; required verification outside the builder runs them before publication.
+
 Use the test profile and mocked external clients described in
 [the testing guide](../09-Tests.md). Never load production env files or use real
 notification credentials for tests. H2 compatibility mode does not certify

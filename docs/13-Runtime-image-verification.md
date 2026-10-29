@@ -18,12 +18,22 @@ Run inside the repository devcontainer:
 mvn -B -ntp clean verify
 docker build --build-arg SKIP_TESTS=true -t contact-service:local-smoke .
 bash scripts/verify-container.sh contact-service:local-smoke
+bash scripts/verify-admin-operator.sh contact-service:local-smoke
 ```
 
-Omitting SKIP_TESTS=true executes `mvn clean verify` during the build, including
-Failsafe integration tests. Skip tests only when the same revision has already
-passed complete verification, as in CI. Docker access, network connectivity and
+Omitting SKIP_TESTS=true executes Java/H2 verification during the build, including
+non-PostgreSQL Failsafe tests. BuildKit has no Docker daemon, so its invocation
+explicitly excludes `postgres`-tagged Testcontainers tests. The required verifier
+outside BuildKit runs every test, including PostgreSQL migrations/locking, before
+building/publishing. The image build alone does not certify those behaviors.
+Skip ordinary build tests only when the same revision has already passed complete
+verification, as in CI. Docker access, network connectivity and
 available disk space are required. No tools are installed on the host.
+
+The account/operator smoke adds controlled provision/reset/enable/disable and
+guarded legacy baselining using the actual jar, private synthetic input, isolated
+PostgreSQL and no HTTP listener or notifications. See
+[managed identities](14-Managed-admin-identities.md) for the migration contract.
 
 `.dockerignore` excludes environment files, private keys/certificates, logs and
 scratch directories, including Git-ignored local files. Git-ignore alone does

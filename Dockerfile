@@ -5,7 +5,9 @@ WORKDIR /app
 COPY . .
 
 ARG SKIP_TESTS=false
-RUN mvn -B -ntp clean verify -DskipTests=${SKIP_TESTS}
+# BuildKit has no Docker daemon for Testcontainers. Required CI/devcontainer
+# verification runs the postgres-tagged suite before this image build.
+RUN mvn -B -ntp clean verify -DexcludedGroups=postgres -DskipTests=${SKIP_TESTS}
 
 FROM eclipse-temurin:21-jre-jammy AS service
 

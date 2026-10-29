@@ -2,6 +2,9 @@
   "name": "contact-service-dev",
   "build": { "dockerfile": "Dockerfile" },
   "workspaceFolder": "/workspaces/contact-service",
+  "containerEnv": {
+    "TESTCONTAINERS_HOST_OVERRIDE": "host.docker.internal"
+  },
   "features": {
     "ghcr.io/devcontainers/features/docker-outside-of-docker:1": {},
     "ghcr.io/devcontainers/features/github-cli:1": {}

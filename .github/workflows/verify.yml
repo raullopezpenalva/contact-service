@@ -49,6 +49,8 @@ jobs:
         run: docker build --build-arg SKIP_TESTS=true -t contact-service:ci-smoke .
       - name: Verify runtime against isolated PostgreSQL
         run: bash scripts/verify-container.sh contact-service:ci-smoke
+      - name: Verify controlled admin operator
+        run: bash scripts/verify-admin-operator.sh contact-service:ci-smoke
       - name: Export verified runtime image
         if: inputs.export_image
         run: docker save contact-service:ci-smoke | gzip > runtime-image.tar.gz
