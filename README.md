@@ -182,6 +182,10 @@ Projects documentation is located in `/docs`:
 
 ## OpenAPI/Swagger
 
+Swagger/OpenAPI are disabled by default. Enable them only in an isolated `local`
+profile with `SECURITY_LOCAL_DOCS_ENABLED=true`, `SPRINGDOC_API_DOCS_ENABLED=true`
+and `SPRINGDOC_SWAGGER_UI_ENABLED=true`; the production route policy denies them.
+
 This repository integrates API documentation using **springdoc-openapi-starter-webmvc-ui**, enabling comprehensive and interactive exploration of all available endpoints. The documentation is accessible via two primary methods:
 
 - **Swagger UI**  
