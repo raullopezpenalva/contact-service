@@ -11,6 +11,7 @@ public record ApiError(
     String error,
     String message,
     String path,
-    List<FieldErrorItem> details
+    List<FieldErrorItem> details,
+    String requestId
 
 ) {}
