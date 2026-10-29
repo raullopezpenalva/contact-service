@@ -27,3 +27,14 @@ jobs:
             target/failsafe-reports/
           if-no-files-found: ignore
           retention-days: 14
+  container-smoke:
+    name: Runtime image smoke
+    needs: verify
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v6
+      - name: Build runtime image after Maven verification
+        run: docker build --build-arg SKIP_TESTS=true -t contact-service:ci-smoke .
+      - name: Verify runtime against isolated PostgreSQL
+        run: bash scripts/verify-container.sh contact-service:ci-smoke
