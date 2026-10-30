@@ -12,7 +12,7 @@ Java sources live under
 | `modules/contact/domain` | Contact message model, status, and contact-owned domain events |
 | `modules/contact/infrastructure` | Repository, security configuration and supporting adapters |
 | `modules/platform/notification` | Notification orchestration, domain delivery state, ports, configuration and channel/persistence adapters |
-| `modules/platform/websecurity` | Request quotas, body limits, proxy trust and security logging |
+| `modules/platform/websecurity` | Request quotas, body limits, proxy trust, security logging and managed administrator identities; login/JWT remains planned in #45–#48 |
 | `shared/events` | Shared event abstraction and Spring event publication configuration |
 
 Tests mirror these concerns under `src/test/java`; existing API integration tests
@@ -66,6 +66,10 @@ for an unmentioned architectural redesign. Routine methods, DTOs, adapters and
 tests inside existing responsibilities can proceed autonomously.
 
 ## Relevant references
+
+The maintainer reaffirmed this ownership on 2026-10-30. Keep current users/JWT
+work in platform; the [future centralized identity idea](../security/003-future-centralized-identity.md)
+does not authorize a module extraction or change the current implementation plan.
 
 - [Domain model](../04-Domain.md)
 - [API flows](../05-Flows.md)

@@ -180,3 +180,11 @@ See [runtime image verification](13-Runtime-image-verification.md) for execution
 and limits. The original assessment above preserves its baseline findings;
 successful isolated startup does not validate the live production proxy, existing
 database upgrades, SMTP delivery or rollback readiness.
+
+## Future identity centralization (2026-10-30)
+
+Record the [future administrative identity idea](security/003-future-centralized-identity.md)
+for later releases. The approved local users/JWT plan continues in
+`modules/platform/websecurity` through #45–#48, without extracting user/auth modules.
+No new release scope, deadline, infrastructure dependency or implementation is
+activated by this note. Homelab owns the future cross-application study.

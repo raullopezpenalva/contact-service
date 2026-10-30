@@ -6,6 +6,11 @@ Raúl explicitly approved the concrete PR #52 proposal in the task; the decision
 is recorded in [#42](https://github.com/raullopezpenalva/contact-service/issues/42#issuecomment-6505160359).
 This approves the design, not production cutover, releases or maintainer-only merges.
 
+**Clarification, 2026-10-30:** the maintainer reaffirmed local users/JWT inside
+`modules/platform/websecurity`, with no separate user/auth module extraction.
+Infrastructure-wide identity is a [future-release idea](003-future-centralized-identity.md),
+not a replacement for or dependency of the current #45–#48 implementation.
+
 ## Context and alternatives
 
 At origin/main `3c85218`, Boot 3.5.11 / Java 21 manages Spring Security 6.5.8
