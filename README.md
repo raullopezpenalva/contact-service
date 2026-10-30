@@ -317,3 +317,5 @@ The shared workflow also builds and checks the runtime image against temporary
 PostgreSQL without external notifications. See
 [runtime image verification](docs/13-Runtime-image-verification.md) for local
 devcontainer commands, required checks and production limitations.
+
+Release preparation after the JWT migration: [readiness and remaining production gates](docs/16-JWT-release-readiness.md).
