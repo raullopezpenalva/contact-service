@@ -49,7 +49,7 @@ notification channel configuration, and build/test discovery.
 | High | Admin detail/update/list had no behavioral integration coverage | ContactApiIT checks full detail, status filtering, pagination, summary content exclusion, persisted status/note/timestamp, missing IDs, invalid enum/UUID and rejected unauthorized updates |
 | High | Persisted update timestamp was not actually updated | Regression exposed `updatable=false` on updatedAt; corrected column mapping and verified by reloading the entity |
 | High | Notification orchestration/configuration lacked isolated tests | NotificationServiceTest checks pending-before-send/final-state persistence, gateway selection, disabled sending, missing gateways, swallowed delivery failures, attempts and configured channel parsing |
-| High | Public/admin security | Existing HardeningTest and AdminSecurityTest retained: quota concurrency/expiry/capacity, body limits, proxy trust, independent quotas, Basic Auth and failure logs without secrets |
+| High | Public/admin security | Existing HardeningTest and AdminSecurityTest retained: quota concurrency/expiry/capacity, body limits, proxy trust, independent quotas, JWT-only authentication and failure logs without secrets |
 | Medium | Mappers and delivery domain | Existing mapper tests and NotificationDeliveryTest retained |
 | Medium | Test discovery and disabled smoke test | Failsafe bound to verify, Surefire fails on empty suite; redundant disabled smoke test removed |
 | Medium | PRs received no automated verification | PR/manual workflows call shared Java 21 Maven verification with retained reports |
@@ -124,4 +124,5 @@ errors and diagnostic logs, denied routes/methods/dispatches, and minimal health
 HardeningTest additionally rejects malformed numeric/header variants without DNS
 resolution. The image smoke repeats representative errors/attribution checks
 against actual PostgreSQL. No external notifications or production credentials
-are used. This intermediate work does not claim managed users or JWT are ready.
+are used. AdminJwtIT/AdminJwtPostgresIT additionally cover actual signed JWTs and live sessions; see
+[JWT migration](15-Admin-JWT-migration.md) for lifecycle and remaining cutover gates.

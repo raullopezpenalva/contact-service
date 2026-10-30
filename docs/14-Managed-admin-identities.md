@@ -2,8 +2,9 @@
 
 **Status:** implemented foundation for the users/JWT contract approved in #42
 ([design PR #52](https://github.com/raullopezpenalva/contact-service/pull/52)).
-This change provides identities, migrations and an operator tool. It does not
-expose login, issue JWTs or make managed credentials work with legacy Basic Auth.
+This guide covers the identity/migration/operator foundation. The subsequent
+[JWT implementation and cutover guide](15-Admin-JWT-migration.md) adds login, live
+session checks and Bearer-only administration; no Basic compatibility remains.
 Production remains v1.3.0 until a separate maintainer-authorized rollout.
 
 ## Ownership and credentials
@@ -21,8 +22,8 @@ output. Passwords contain 15–128 Unicode code points with valid bounded UTF-8;
 spaces are preserved and passwords are not silently truncated. Only the encoded
 hash is stored. The initial stored-parameter allowlist is fixed; changing work
 factors requires retaining support for existing valid hashes and bounded costs.
-This encoder is not a global PasswordEncoder bean, so it does not accidentally
-change the still-separate legacy Basic provider during incremental review.
+The bounded encoder is shared by operator management and the explicit Spring
+credential provider; no global default/shared Basic account is configured.
 
 API summaries and entity serialization omit hashes. Operator/audit logs contain
 account UUID, operation/state and safe error type, never supplied credentials or
@@ -35,8 +36,8 @@ remain privileged and JWT does not protect against their compromise.
 
 Boot manages Flyway 11.7.2 and its PostgreSQL module. V1 describes the existing
 contact/notification schema; V2 adds accounts, role grants, a management-lock row
-and the persistent session schema for #45/#46. JWT/session issuance is not yet
-implemented. Hibernate uses `ddl-auto=validate`, not automatic schema updates.
+and persistent sessions. V3 adds signing-key/token binding and revokes pre-issuance
+unbound rows. JWT issuance and live validation are now implemented. Hibernate uses `ddl-auto=validate`, not automatic schema updates.
 Baseline-on-migrate is off; schema drift/checksum failures stop startup.
 Startup policy also refuses overrides that enable automatic baseline/clean,
 disable migration validation/Flyway, or restore Hibernate update/create behavior.
@@ -45,9 +46,8 @@ Only isolated H2 tests may disable Flyway and generate their ephemeral schema.
 Every operator change locks the shared management row in a transaction. Parallel
 attempts cannot disable the last enabled ADMIN, including across processes.
 Password reset and enabled-state changes increment authenticationVersion and
-revoke existing session rows in that same transaction. The revocation middleware
-and logout/expiry enforcement are later issues; this foundation does not claim
-that an unimplemented JWT request path already checks session state.
+revoke existing session rows in that same transaction. Live session/account checks enforce these changes on the next authentication after
+commit, including across restart; already authenticated in-flight work may finish.
 
 ## One-shot operator tool
 
@@ -94,7 +94,7 @@ stable account UUID. There is no HTTP account-management/bootstrap endpoint.
 
 ## Fresh database and existing PostgreSQL 15
 
-Fresh databases execute V1/V2 on initialization, but no administrator is created
+Fresh databases execute V1/V2/V3 on initialization, but no administrator is created
 until explicitly provisioned. For an existing installation:
 
 1. Prepare and test the candidate on an isolated representative restored database.
@@ -118,7 +118,7 @@ until explicitly provisioned. For an existing installation:
    use an approved operator identity. If it refuses drift, stop and inspect it on
    the isolated copy. Do not enable baseline-on-migrate, clean/repair history,
    weaken constraints or edit an applied migration to get past a failure.
-6. The next operator/app initialization runs V2. Provision/recover the first admin,
+6. The next operator/app initialization runs V2/V3. Provision/recover the first admin,
    verify state, and retain the snapshot and previous image. Use the final #48
    procedure for private ingress, tokens, client migration and application cutover.
 
