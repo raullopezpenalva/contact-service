@@ -12,7 +12,7 @@ Java sources live under
 | `modules/contact/domain` | Contact message model, status, and contact-owned domain events |
 | `modules/contact/infrastructure` | Repository, security configuration and supporting adapters |
 | `modules/platform/notification` | Notification orchestration, domain delivery state, ports, configuration and channel/persistence adapters |
-| `modules/platform/websecurity` | Request quotas, body limits, proxy trust, security logging and managed administrator identities; login/JWT remains planned in #45–#48 |
+| `modules/platform/websecurity` | Managed admin accounts, JWT issuance/validation, persistent sessions, operator management, request quotas, body limits and proxy trust |
 | `shared/events` | Shared event abstraction and Spring event publication configuration |
 
 Tests mirror these concerns under `src/test/java`; existing API integration tests
@@ -81,3 +81,11 @@ does not authorize a module extraction or change the current implementation plan
 
 When documentation and code differ, investigate the intended contract and correct
 the affected sources together; do not treat old prose as proof of runtime behavior.
+
+## Approved identity scope
+
+Keep the approved local users/JWT implementation within platform/websecurity.
+Contact security composes HTTP policies; contact/notification must not query
+identity repositories. No separate user/auth modules or external identity provider
+are introduced in this release. External authentication is future work and needs
+its own design review. See [the JWT cutover guide](../15-Admin-JWT-migration.md).

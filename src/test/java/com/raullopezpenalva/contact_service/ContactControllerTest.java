@@ -28,9 +28,9 @@ import static java.util.concurrent.TimeUnit.SECONDS;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 
 @SpringBootTest
-@AutoConfigureMockMvc
+@AutoConfigureMockMvc(print=org.springframework.boot.test.autoconfigure.web.servlet.MockMvcPrint.NONE)
 @ActiveProfiles("test")
-class ContactControllerTest {
+class ContactControllerTest extends JwtTestSupport {
     
     @Autowired MockMvc mockMvc;
     @Autowired ContactMessageRepository contactMessageRepository;

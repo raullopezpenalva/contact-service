@@ -24,7 +24,7 @@ Contact Service is a Spring Boot microservice designed to handle contact form su
 	- Change message status (`NEW`, `READ`, `ARCHIVED`, `SPAM`, `NOTIFICATION_FAILED`)
 	- Add internal admin notes
 - **Traceability**: Stores metadata such as source IP and User-Agent for anti-abuse and debugging.
-- **Simple authentication** for admin endpoints (Basic Auth).
+- **Managed admin accounts and short-lived JWTs**, with persistent session revocation.
 - **Docker Compose** setup for local development (backend + PostgreSQL).
 
 ---
@@ -37,7 +37,7 @@ Contact Service is a Spring Boot microservice designed to handle contact form su
 - Spring Data JPA + PostgreSQL
 - Event-driven design
 - Spring Mail (SMTP notifications) (MVPv1.2.0)
-- Spring Security (Basic Auth for admin endpoints)
+- Spring Security (JWT Bearer and explicit ADMIN authorization)
 - Docker Compose (local infrastructure)
 
 ---
@@ -140,14 +140,17 @@ v1.2.0 – SMTP / Email provider integration
 ## Security
 
 
-The application is secured using Spring Security. Endpoints under `/api/v1/admin/*` are protected with Basic Auth authentication.
+Admin access uses managed accounts and 10-minute RS256 Bearer tokens. Basic Auth,
+shared environment users, refresh tokens and credential cookies are removed.
+Authentication and admin routes require a private VPN/management ingress in production.
 
-The admin username and password can be easily changed using environment variables in the `example.env` file:
+Provision accounts with the non-web operator; configure JWT_ISSUER,
+JWT_ACTIVE_KEY_ID, JWT_PRIVATE_KEY_FILE and JWT_PUBLIC_KEY_DIRECTORY using
+protected read-only files. There are no default accounts or signing keys.
+See [JWT clients and staged migration](docs/15-Admin-JWT-migration.md) for login,
+logout, key rotation, local devcontainer setup and the maintainer cutover gates.
+The currently deployed v1.3.0 is unaffected until an authorized rollout.
 
-```
-SPRING_SECURITY_USER_NAME=user-example
-SPRING_SECURITY_USER_PASSWORD=password-example
-```
 ---
 ## Domain Events & Notifications
 
@@ -229,8 +232,10 @@ All OpenAPI documentation configuration is centralized in the `OpenApiConfig.jav
 		SPRING_DATASOURCE_PASSWORD=password-example
 
 		# --- Security Configuration ---
-		SPRING_SECURITY_USER_NAME=user-example
-		SPRING_SECURITY_USER_PASSWORD=password-example
+		JWT_ISSUER=https://admin.example.com
+		JWT_ACTIVE_KEY_ID=admin-2026
+		JWT_PRIVATE_KEY_FILE=/run/secrets/admin-jwt-private.pem
+		JWT_PUBLIC_KEY_DIRECTORY=/run/secrets/admin-jwt-public
 
 		# --- Spring SMTP Server Configuration ---
 		SPRING_MAIL_HOST=email-host

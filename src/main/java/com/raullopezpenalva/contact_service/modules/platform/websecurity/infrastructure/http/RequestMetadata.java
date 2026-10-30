@@ -21,7 +21,8 @@ public final class RequestMetadata {
         String uri = request.getRequestURI();
         String path = uri.substring(Math.min(request.getContextPath().length(), uri.length()));
         if (path.equals("/api/v1/contact/messages") || path.equals("/api/v1/admin/contact/messages")
-                || path.equals("/actuator/health")) return path;
+                || path.equals("/actuator/health")
+                || java.util.Set.of("/api/v1/auth/login","/api/v1/auth/me","/api/v1/auth/logout","/api/v1/auth/change-password").contains(path)) return path;
         if (path.matches("/api/v1/admin/contact/messages/[^/]+/status"))
             return "/api/v1/admin/contact/messages/{id}/status";
         if (path.matches("/api/v1/admin/contact/messages/[^/]+"))

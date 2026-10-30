@@ -10,9 +10,12 @@ database="${prefix}-db"
 application="${prefix}-app"
 client="${prefix}-http"
 proxy="${prefix}-proxy"
+auth_client="${prefix}-auth"
+key_volume="${prefix}-keys"
 tls_dir=$(mktemp -d)
 database_image="${SMOKE_DATABASE_IMAGE:-postgres:15-alpine}"
 client_image="${SMOKE_HTTP_IMAGE:-curlimages/curl:8.12.1}"
+auth_image="${SMOKE_AUTH_IMAGE:-python:3.12-slim}"
 proxy_image="${SMOKE_PROXY_IMAGE:-nginx:stable-alpine}"
 
 cleanup() {
@@ -23,7 +26,8 @@ cleanup() {
     docker logs --tail 50 "$database" 2>&1 || true
     docker logs --tail 50 "$proxy" 2>&1 || true
   fi
-  docker rm -fv "$client" "$application" "$database" "$proxy" >/dev/null 2>&1 || true
+  docker rm -fv "$client" "$application" "$database" "$proxy" "$auth_client" >/dev/null 2>&1 || true
+  docker volume rm "$key_volume" >/dev/null 2>&1 || true
   docker network rm "$network" >/dev/null 2>&1 || true
   rm -rf "$tls_dir"
   exit "$result"
@@ -36,6 +40,7 @@ trap 'exit 143' TERM
 docker pull "$database_image" >/dev/null
 docker pull "$client_image" >/dev/null
 docker pull "$proxy_image" >/dev/null
+docker pull "$auth_image" >/dev/null
 docker network create --internal "$network" >/dev/null
 docker run -d --name "$database" --network "$network" \
   -e POSTGRES_DB=contact_smoke -e POSTGRES_USER=smoke \
@@ -61,23 +66,45 @@ openssl req -x509 -newkey rsa:2048 -nodes -days 1 -subj '/CN=smoke.invalid' \
 docker create --name "$proxy" --network "$network" "$proxy_image" sh -c \
   'mkdir -p /etc/nginx/tls; cp /tmp/cert.pem /etc/nginx/tls/fullchain.pem; cp /tmp/key.pem /etc/nginx/tls/privkey.pem; until nginx -t >/dev/null 2>&1; do sleep 1; done; exec nginx -g "daemon off;"' >/dev/null
 docker cp deploy/nginx.conf "$proxy:/etc/nginx/conf.d/default.conf"
+docker cp deploy/admin-allow.conf "$proxy:/etc/nginx/admin-allow.conf"
 docker cp "$tls_dir/cert.pem" "$proxy:/tmp/cert.pem"
 docker cp "$tls_dir/key.pem" "$proxy:/tmp/key.pem"
 docker start "$proxy" >/dev/null
 proxy_ip=$(docker inspect --format "{{(index .NetworkSettings.Networks \"$network\").IPAddress}}" "$proxy")
 
+# Generate temporary RSA material inside the devcontainer/CI, then copy to a private
+# Docker volume (the Docker daemon may be outside the devcontainer filesystem).
+umask 077
+mkdir -p "$tls_dir/jwt/public"
+openssl genpkey -algorithm RSA -pkeyopt rsa_keygen_bits:3072 -out "$tls_dir/jwt/private.pem" >/dev/null 2>&1
+openssl pkey -in "$tls_dir/jwt/private.pem" -pubout -out "$tls_dir/jwt/public/smoke.pub.pem" >/dev/null 2>&1
+printf '%s' 'Synthetic runtime admin password 47!' > "$tls_dir/jwt/password"
+docker volume create "$key_volume" >/dev/null
+tar -C "$tls_dir/jwt" -cf - . | docker run --rm -i --network none --user 0 \
+  -v "$key_volume:/run/jwt" --entrypoint sh "$image" -c \
+  'umask 077; tar -xf - -C /run/jwt; chown -R 10001:10001 /run/jwt; chmod 700 /run/jwt /run/jwt/public; chmod 400 /run/jwt/private.pem /run/jwt/password'
+# The narrow operator migrates/provisions without JWT, mail or web configuration.
+docker run --rm --network "$network" -v "$key_volume:/run/jwt:ro" \
+  -e SPRING_DATASOURCE_URL="jdbc:postgresql://${database}:5432/contact_smoke" \
+  -e SPRING_DATASOURCE_USERNAME=smoke -e SPRING_DATASOURCE_PASSWORD=isolated-test-password \
+  "$image" --admin-operator provision --login smoke-admin --password-file /run/jwt/password >/dev/null
+
 docker run -d --name "$application" --network "$network" \
-  --network-alias contact-service \
+  --network-alias contact-service -v "$key_volume:/run/jwt:ro" \
   -e SPRING_SERVER_PORT=8080 \
   -e SPRING_DATASOURCE_URL="jdbc:postgresql://${database}:5432/contact_smoke" \
   -e SPRING_DATASOURCE_USERNAME=smoke -e SPRING_DATASOURCE_PASSWORD=isolated-test-password \
-  -e SPRING_SECURITY_USER_NAME=smoke -e SPRING_SECURITY_USER_PASSWORD=isolated-test-password \
+  -e JWT_ISSUER=https://smoke.invalid -e JWT_ACTIVE_KEY_ID=smoke \
+  -e JWT_PRIVATE_KEY_FILE=/run/jwt/private.pem -e JWT_PUBLIC_KEY_DIRECTORY=/run/jwt/public \
   -e SPRING_MAIL_HOST=127.0.0.1 -e SPRING_MAIL_PORT=9 \
   -e SPRING_MAIL_USERNAME=service@example.com -e SPRING_MAIL_PASSWORD=unused \
   -e MANAGEMENT_HEALTH_MAIL_ENABLED=false \
   -e NOTIFICATION_ENABLED=false -e NOTIFICATIONS_RETRY_ENABLED=false \
   -e SECURITY_TRUSTED_PROXIES="$proxy_ip" \
   "$image" >/dev/null
+docker create --name "$auth_client" --network "$network" "$auth_image" sleep infinity >/dev/null
+docker cp scripts/runtime-auth-smoke.py "$auth_client:/tmp/auth-smoke.py"
+docker start "$auth_client" >/dev/null
 
 http() {
   docker run --rm --name "$client" --network "$network" "$client_image" "$@"
@@ -119,7 +146,17 @@ assert_status 201 --header 'Content-Type: application/json' \
   --data '{"email":"visitor@example.com","subject":"Container smoke test","content":"An isolated PostgreSQL-backed smoke test."}' \
   "$base/api/v1/contact/messages"
 assert_status 401 "$base/api/v1/admin/contact/messages"
-assert_status 200 --user smoke:isolated-test-password "$base/api/v1/admin/contact/messages"
+assert_status 401 --user smoke:isolated-test-password "$base/api/v1/admin/contact/messages"
+
+docker exec "$auth_client" python /tmp/auth-smoke.py "$base" before
+docker restart "$application" >/dev/null
+ready=false
+for ((attempt=0; attempt<60; attempt++)); do
+  if http --fail --silent --connect-timeout 2 --max-time 3 "$base/actuator/health" >/dev/null; then ready=true; break; fi
+  sleep 1
+done
+test "$ready" = true
+docker exec "$auth_client" python /tmp/auth-smoke.py "$base" after
 
 # The API success is backed by an actual row in temporary PostgreSQL.
 rows=$(docker exec "$database" psql -U smoke -d contact_smoke -Atc \
@@ -155,6 +192,11 @@ for ((attempt = 0; attempt < 20; attempt++)); do
   sleep 1
 done
 test "$proxy_ready" = true
+# The unconfigured private management boundary fails closed at the actual TLS proxy.
+private_status=$(https --output /dev/null --write-out '%{http_code}' https://smoke.invalid/api/v1/auth/login)
+test "$private_status" = 403
+private_status=$(https --output /dev/null --write-out '%{http_code}' https://smoke.invalid/api/v1/admin/contact/messages)
+test "$private_status" = 403
 proxy_status=$(https --output /dev/null --write-out '%{http_code}' \
   --header 'Content-Type: application/json' --header 'X-Real-IP: 203.0.113.99' \
   --header 'X-Forwarded-For: 203.0.113.99' \

@@ -22,7 +22,9 @@ public final class AdminOperator {
     public static Command parse(String[] args) {
         if(args.length==2 && args[0].equals("baseline-legacy") && args[1].equals("--confirm-offline"))
             return new Command("baseline-legacy",null,null);
-        if(args.length<3 || !Set.of("provision","reset-password","disable","enable").contains(args[0]) || !args[1].equals("--login"))
+        if(args.length==3 && args[0].equals("revoke-key") && args[1].equals("--kid") && args[2].matches("[A-Za-z0-9_-]{1,64}"))
+            return new Command("revoke-key",args[2],null);
+        if(args.length<3 || !Set.of("provision","reset-password","disable","enable","revoke-sessions").contains(args[0]) || !args[1].equals("--login"))
             throw new IllegalArgumentException("Invalid operator command");
         boolean password=Set.of("provision","reset-password").contains(args[0]);
         if(args.length!=3 && !(password && args.length==5 && args[3].equals("--password-file")))
@@ -90,11 +92,16 @@ public final class AdminOperator {
                 .profiles("admin-operator-internal").web(WebApplicationType.NONE)
                 .properties("spring.main.banner-mode=off","logging.level.org.flywaydb=warn").run()) {
                 var service=context.getBean(AdminAccountService.class);
+                if(command.operation().equals("revoke-key")) {
+                    int count=service.revokeKey(command.login());
+                    System.out.println("Operator key revocation completed; sessions="+count);return 0;
+                }
                 var result=switch(command.operation()) {
                     case "provision" -> service.provision(command.login(),password);
                     case "reset-password" -> service.resetPassword(command.login(),password);
                     case "disable" -> service.setEnabled(command.login(),false);
                     case "enable" -> service.setEnabled(command.login(),true);
+                    case "revoke-sessions" -> service.revokeSessions(command.login());
                     default -> throw new IllegalArgumentException("Invalid operator command");
                 };
                 System.out.println("Operator operation completed; accountId="+result.id());
