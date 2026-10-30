@@ -141,4 +141,16 @@ class HardeningTest {
         response=new MockHttpServletResponse();f.doFilter(request("/api/v1/contact/messages"),response,(a,b)->{});
         assertEquals(200,response.getStatus());
     }
+    @ParameterizedTest
+    @ValueSource(strings={"/api/v1/%61uth/login","/api/v1/auth/%6cogin","/api/v1/%61dmin/contact/messages"})
+    void encodedManagementAliasesCannotEscapeEarlyControls(String rawPath) throws Exception {
+        var r=request(rawPath);var response=new MockHttpServletResponse();
+        filter().doFilter(r,response,(a,b)->fail("Encoded management alias reached authentication"));
+        assertEquals(400,response.getStatus());
+        // Repeat with the actual decoded servlet path supplied by a real container.
+        r=request(rawPath);r.setServletPath(org.springframework.web.util.UriUtils.decode(rawPath,java.nio.charset.StandardCharsets.UTF_8));
+        response=new MockHttpServletResponse();
+        filter().doFilter(r,response,(a,b)->fail("Decoded servlet path escaped management controls"));
+        assertEquals(400,response.getStatus());
+    }
 }

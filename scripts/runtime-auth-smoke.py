@@ -43,6 +43,9 @@ def login():
 
 try:
     if phase == 'before':
+        # Raw encoded letters are rejected before the expensive credential path.
+        call('POST', '/api/v1/%61uth/login', 400, {'username': 'smoke-admin', 'password': password})
+        call('POST', '/api/v1/auth/%6cogin', 400, {'username': 'smoke-admin', 'password': password})
         first, second = login(), login()
         call('GET', '/api/v1/auth/me', 200, token=first)
         page = call('GET', '/api/v1/admin/contact/messages', 200, token=first)

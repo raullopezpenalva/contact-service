@@ -77,7 +77,8 @@ A future same-origin browser UI keeps the token only in memory. No localStorage,
 sessionStorage, IndexedDB or cookies; reload means login. No UI is introduced here.
 Supplied Origin on auth/admin must match the fixed issuer origin exactly; absent
 Origin allows non-browser clients. Null, other and duplicate Origins are refused.
-No credentialed or wildcard CORS is enabled. JSON-only login and explicit Bearer
+Encoded management-route aliases are rejected before authentication so they cannot
+escape quotas, body limits or Origin checks. No credentialed or wildcard CORS is enabled. JSON-only login and explicit Bearer
 headers introduce no ambient browser credentials; CSRF is disabled for this
 header-only model. Cookie/cross-origin clients require a new review and appropriate
 CSRF protections. Never infer the allowed origin from Host/forwarding headers.

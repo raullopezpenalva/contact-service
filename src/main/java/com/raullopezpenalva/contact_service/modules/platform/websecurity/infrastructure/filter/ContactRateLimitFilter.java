@@ -60,13 +60,23 @@ public class ContactRateLimitFilter extends OncePerRequestFilter {
 
     private void filterResolved(HttpServletRequest request, HttpServletResponse response,
             FilterChain chain) throws ServletException, IOException {
-        boolean admin = request.getServletPath().startsWith("/api/v1/admin/")
-            || request.getRequestURI().startsWith(request.getContextPath() + "/api/v1/admin/");
-        boolean contact = "POST".equals(request.getMethod())
-            && (request.getContextPath() + "/api/v1/contact/messages").equals(request.getRequestURI());
-        String path=request.getRequestURI().substring(request.getContextPath().length());
+        String rawPath=request.getRequestURI().substring(request.getContextPath().length());
+        String path=request.getServletPath();
+        // Servlet paths are decoded by the container. Mock/test requests may omit
+        // that field, so decode once for the same management-route admission policy.
+        if(path.isEmpty()) {
+            try {path=org.springframework.web.util.UriUtils.decode(rawPath,java.nio.charset.StandardCharsets.UTF_8);}
+            catch(IllegalArgumentException invalid) {SecurityErrorWriter.write(request,response,400,"Invalid request");return;}
+        }
+        boolean admin=path.startsWith("/api/v1/admin/");
         boolean auth=path.startsWith("/api/v1/auth/");
+        boolean contact="POST".equals(request.getMethod()) && path.equals("/api/v1/contact/messages");
         if(auth) {response.setHeader("Cache-Control","no-store");response.setHeader("Pragma","no-cache");}
+        // Encoded management routes must not become aliases with weaker quotas,
+        // Origin checks or body limits than the exact documented routes.
+        if((auth || admin) && !path.equals(rawPath)) {
+            SecurityErrorWriter.write(request,response,400,"Invalid request");return;
+        }
         if (!admin && !contact && !auth) { chain.doFilter(request, response); return; }
         String scope=admin?"admin":contact?"contact":path.equals("/api/v1/auth/login")?"login":
             path.equals("/api/v1/auth/change-password")?"password":"auth";
