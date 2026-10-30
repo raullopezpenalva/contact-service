@@ -67,6 +67,10 @@ tests inside existing responsibilities can proceed autonomously.
 
 ## Relevant references
 
+The maintainer reaffirmed this ownership on 2026-10-30. Keep current users/JWT
+work in platform; the [future centralized identity idea](../security/003-future-centralized-identity.md)
+does not authorize a module extraction or change the current implementation plan.
+
 - [Domain model](../04-Domain.md)
 - [API flows](../05-Flows.md)
 - [DTOs](../06-DTO.md)

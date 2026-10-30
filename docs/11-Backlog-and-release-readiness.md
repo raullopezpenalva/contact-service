@@ -181,5 +181,13 @@ and limits. The original assessment above preserves its baseline findings;
 successful isolated startup does not validate the live production proxy, existing
 database upgrades, SMTP delivery or rollback readiness.
 
+## Future identity centralization (2026-10-30)
+
+Record the [future administrative identity idea](security/003-future-centralized-identity.md)
+for later releases. The local users/JWT implementation delivered by #45–#48 remains in
+`modules/platform/websecurity`, without extracting user/auth modules.
+No new release scope, deadline, infrastructure dependency or implementation is
+activated by this note. Homelab owns the future cross-application study.
+
 The historical Basic-auth readiness notes above predate #45–#48. For the JWT-only
 candidate, use the [current cutover gates](15-Admin-JWT-migration.md).
