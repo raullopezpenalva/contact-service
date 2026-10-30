@@ -1,7 +1,8 @@
 # Admin JWT clients and staged cutover (#45–#48)
 
-Status: implemented candidate, pending maintainer review and explicit acceptance
-of this cutover plan. This document does not authorize a release or deployment.
+Status: implemented candidate. The maintainer explicitly approved this concrete
+cutover plan on 2026-10-30 in the implementation conversation, recorded in #48.
+This acceptance does not authorize merging, a release or deployment.
 Production v1.3.0 continues until a separate maintenance decision. The approved
 [ADR](security/001-admin-users-jwt.md) and [HTTP contract](security/002-admin-auth-contract.md)
 remain the design authority. Accounts/authentication stay in platform/websecurity;
@@ -204,10 +205,11 @@ PostgreSQL persistence, TLS proxy and forwarding/error regressions. It publishes
 no ports and sends no external mail/Telegram. Tests suppress MockMvc dumps so
 failed assertions do not upload full tokens; signing keys remain outside reports.
 
-Architecture was approved in #42/PR #52 and reaffirmed by the maintainer. Explicit
-acceptance of this concrete production cutover plan, live ACL/TLS verification,
-secret custody, target-host capacity and deployment remain maintainer gates.
-#48 stays open for that acceptance; implementation is delivered by this PR.
+Architecture was approved in #42/PR #52 and reaffirmed by the maintainer. This
+concrete production cutover plan was explicitly accepted on 2026-10-30. Live
+ACL/TLS verification, secret custody, target-host capacity and deployment remain
+maintainer gates for the separately authorized rollout. #48 closes with the
+implementation PR after maintainer review/merge; it does not certify deployment.
 
 References: [Spring Security 6.5 JWT resource server](https://docs.spring.io/spring-security/reference/6.5/servlet/oauth2/resource-server/jwt.html),
 [DaoAuthenticationProvider](https://docs.spring.io/spring-security/reference/6.5/servlet/authentication/passwords/dao-authentication-provider.html).
