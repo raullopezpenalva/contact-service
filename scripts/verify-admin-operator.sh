@@ -72,5 +72,5 @@ run_operator baseline-legacy --confirm-offline
 run_operator provision --login legacy-owner --password-file /run/input/password
 version=$(docker exec "$database" psql -U operator -d legacy_operator -Atc \
   "SELECT version FROM flyway_schema_history WHERE success ORDER BY installed_rank DESC LIMIT 1")
-test "$version" = 2
+test "$version" = 3
 echo 'Admin operator smoke passed: guarded legacy baseline, private provision, repeat safety, reset, enable/disable and last-admin protection.'
