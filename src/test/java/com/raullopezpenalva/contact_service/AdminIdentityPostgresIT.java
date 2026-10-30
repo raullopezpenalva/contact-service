@@ -161,4 +161,25 @@ class AdminIdentityPostgresIT extends JwtTestSupport {
         db.execute("ALTER TABLE contact_messages ADD CONSTRAINT contact_messages_status_check CHECK (status IN ('N(EW','READ','ARCHIVED','SPAM','NOTIFICATION_FAILED'))");
         assertThrows(IllegalStateException.class,()->LegacySchemaBaseline.baseline(source));
     }
+    @Test void syntheticLegacyBackupRestoresAndMigratesWithoutLosingContactRows() throws Exception {
+        var source=separateDatabase();legacy(source);var db=new JdbcTemplate(source);
+        UUID id=UUID.randomUUID();
+        db.update("INSERT INTO contact_messages(id,content,created_at,email,notification_attempts,status,subject,updated_at) VALUES (?,'Synthetic backup content',CURRENT_TIMESTAMP,'restore@example.test',0,'NEW','Restore rehearsal',CURRENT_TIMESTAMP)",id);
+        String sourceUrl=((DriverManagerDataSource)source).getUrl();
+        String sourceName=sourceUrl.substring(sourceUrl.lastIndexOf('/')+1);
+        String restoredName="restore_"+UUID.randomUUID().toString().replace("-","");
+        String dump="/tmp/"+restoredName+".dump";
+        assertEquals(0,pg.execInContainer("pg_dump","-U",pg.getUsername(),"-d",sourceName,"-Fc","-f",dump).getExitCode(),"Synthetic dump failed");
+        assertEquals(0,pg.execInContainer("createdb","-U",pg.getUsername(),restoredName).getExitCode(),"Isolated restore DB creation failed");
+        assertEquals(0,pg.execInContainer("pg_restore","--exit-on-error","-U",pg.getUsername(),"-d",restoredName,dump).getExitCode(),"Synthetic restore failed");
+        var restored=new DriverManagerDataSource("jdbc:postgresql://"+pg.getHost()+":"+pg.getMappedPort(5432)+"/"+restoredName,pg.getUsername(),pg.getPassword());
+        var restoredDb=new JdbcTemplate(restored);
+        assertEquals(id,restoredDb.queryForObject("SELECT id FROM contact_messages",UUID.class));
+        LegacySchemaBaseline.baseline(restored);
+        var flyway=Flyway.configure().dataSource(restored).baselineOnMigrate(false).load();flyway.migrate();
+        assertEquals("3",flyway.info().current().getVersion().getVersion());
+        assertEquals(id,restoredDb.queryForObject("SELECT id FROM contact_messages",UUID.class));
+        assertEquals(0,restoredDb.queryForObject("SELECT count(*) FROM admin_accounts",Integer.class));
+        assertEquals(0,pg.execInContainer("rm",dump).getExitCode());
+    }
 }
