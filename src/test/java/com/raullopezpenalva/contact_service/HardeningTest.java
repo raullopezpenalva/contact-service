@@ -124,4 +124,33 @@ class HardeningTest {
             assertFalse(v.validate(new CreateContactMessageRequest("a".repeat(245)+"@example.com","Hello","valid message")).isEmpty());
         }
     }
+    @Test void authUnknownLengthBodiesAndIndependentScopesAreBounded() throws Exception {
+        var f=filter();
+        var oversized=new MockHttpServletRequest("POST","/api/v1/auth/login") {
+            @Override public long getContentLengthLong(){return -1;}
+        };
+        oversized.setContent(new byte[8193]);var response=new MockHttpServletResponse();
+        f.doFilter(oversized,response,(a,b)->fail("Oversized auth input reached parsing"));assertEquals(413,response.getStatus());
+        for(String path:java.util.List.of("/api/v1/auth/login","/api/v1/auth/change-password","/api/v1/auth/me")) {
+            ReflectionTestUtils.setField(f,path.endsWith("login")?"loginLimit":path.endsWith("password")?"passwordLimit":"authLimit",1);
+            for(int i=0;i<2;i++) {
+                response=new MockHttpServletResponse();f.doFilter(request(path),response,(a,b)->{});
+                assertEquals(i==0?200:429,response.getStatus());assertEquals("no-cache",response.getHeader("Pragma"));
+            }
+        }
+        response=new MockHttpServletResponse();f.doFilter(request("/api/v1/contact/messages"),response,(a,b)->{});
+        assertEquals(200,response.getStatus());
+    }
+    @ParameterizedTest
+    @ValueSource(strings={"/api/v1/%61uth/login","/api/v1/auth/%6cogin","/api/v1/%61dmin/contact/messages"})
+    void encodedManagementAliasesCannotEscapeEarlyControls(String rawPath) throws Exception {
+        var r=request(rawPath);var response=new MockHttpServletResponse();
+        filter().doFilter(r,response,(a,b)->fail("Encoded management alias reached authentication"));
+        assertEquals(400,response.getStatus());
+        // Repeat with the actual decoded servlet path supplied by a real container.
+        r=request(rawPath);r.setServletPath(org.springframework.web.util.UriUtils.decode(rawPath,java.nio.charset.StandardCharsets.UTF_8));
+        response=new MockHttpServletResponse();
+        filter().doFilter(r,response,(a,b)->fail("Decoded servlet path escaped management controls"));
+        assertEquals(400,response.getStatus());
+    }
 }

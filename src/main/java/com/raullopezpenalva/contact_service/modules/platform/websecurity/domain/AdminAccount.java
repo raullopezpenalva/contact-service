@@ -37,7 +37,8 @@ public class AdminAccount {
     }
     public void resetPassword(String hash) {passwordHash=hash; invalidateAuthentication();}
     public void setEnabled(boolean value) {if(enabled!=value){enabled=value;invalidateAuthentication();}}
-    private void invalidateAuthentication() {authenticationVersion++;updatedAt=Instant.now();}
+    public void setRoles(Set<AdminRole> value) {if(!roles.equals(value)){roles=new HashSet<>(value);invalidateAuthentication();}}
+    public void invalidateAuthentication() {authenticationVersion++;updatedAt=Instant.now();}
     public UUID getId(){return id;}
     public String getLogin(){return login;}
     @JsonIgnore public String getPasswordHash(){return passwordHash;}

@@ -180,3 +180,6 @@ See [runtime image verification](13-Runtime-image-verification.md) for execution
 and limits. The original assessment above preserves its baseline findings;
 successful isolated startup does not validate the live production proxy, existing
 database upgrades, SMTP delivery or rollback readiness.
+
+The historical Basic-auth readiness notes above predate #45–#48. For the JWT-only
+candidate, use the [current cutover gates](15-Admin-JWT-migration.md).

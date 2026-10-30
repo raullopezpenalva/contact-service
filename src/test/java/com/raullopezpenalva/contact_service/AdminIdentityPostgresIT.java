@@ -33,10 +33,10 @@ import static org.junit.jupiter.api.Assertions.*;
 @Testcontainers
 @Tag("postgres")
 @SpringBootTest(properties={"spring.flyway.enabled=true","spring.jpa.hibernate.ddl-auto=validate","app.notification.enabled=false"})
-@AutoConfigureMockMvc
+@AutoConfigureMockMvc(print=org.springframework.boot.test.autoconfigure.web.servlet.MockMvcPrint.NONE)
 @ActiveProfiles("test")
 @ExtendWith(OutputCaptureExtension.class)
-class AdminIdentityPostgresIT {
+class AdminIdentityPostgresIT extends JwtTestSupport {
     @Container static final PostgreSQLContainer<?> pg=new PostgreSQLContainer<>("postgres:15-alpine")
         .withDatabaseName("identity").withUsername("identity").withPassword("isolated-test-password");
     @DynamicPropertySource static void database(DynamicPropertyRegistry properties) {
@@ -146,7 +146,7 @@ class AdminIdentityPostgresIT {
         LegacySchemaBaseline.baseline(source);flyway.migrate();
         assertEquals(id,db.queryForObject("SELECT id FROM contact_messages",UUID.class));
         assertEquals(0,db.queryForObject("SELECT count(*) FROM admin_accounts",Integer.class));
-        assertEquals("2",flyway.info().current().getVersion().getVersion());
+        assertEquals("3",flyway.info().current().getVersion().getVersion());
     }
     @Test void legacyDriftAbortsWithoutBaselineOrPersistentScratchSchema() throws Exception {
         var source=separateDatabase();legacy(source);var db=new JdbcTemplate(source);

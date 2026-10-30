@@ -30,10 +30,10 @@ import static org.mockito.Mockito.*;
 
 @SpringBootTest(properties={"app.security.rate-limit.contactrequest.max-requests=2",
     "app.security.rate-limit.admin.max-requests=100", "app.security.trusted-proxies=10.0.0.2,2001:db8::2"})
-@AutoConfigureMockMvc
+@AutoConfigureMockMvc(print=org.springframework.boot.test.autoconfigure.web.servlet.MockMvcPrint.NONE)
 @ActiveProfiles("test")
 @ExtendWith(OutputCaptureExtension.class)
-class SecurityContractIT {
+class SecurityContractIT extends JwtTestSupport {
     private static final String PUBLIC = "/api/v1/contact/messages";
     private static final String ADMIN = "/api/v1/admin/contact/messages";
     private static final String BODY = "{\"email\":\"person@example.com\",\"subject\":\"Hello\",\"content\":\"A meaningful message body.\"}";
@@ -114,7 +114,7 @@ class SecurityContractIT {
             .content("{\"email\":\""+SECRET+"\"")).andExpect(status().isBadRequest()).andReturn();
         contract(malformed,400);
         assertEquals("Malformed JSON request",json.readTree(malformed.getResponse().getContentAsString()).get("message").asText());
-        var parameter=mvc.perform(get(ADMIN).param("status",SECRET).with(httpBasic("test","test")))
+        var parameter=mvc.perform(get(ADMIN).param("status",SECRET).with(adminBearer()))
             .andExpect(status().isBadRequest()).andReturn();
         contract(parameter,400);
         assertFalse(output.getAll().contains(SECRET));
@@ -137,13 +137,13 @@ class SecurityContractIT {
     @Test void securityAndBodyFailuresUseTheSameSafeContract() throws Exception {
         contract(mvc.perform(get(ADMIN)).andExpect(status().isUnauthorized()).andReturn(),401);
         contract(mvc.perform(get(ADMIN).with(httpBasic("test",SECRET))).andExpect(status().isUnauthorized()).andReturn(),401);
-        contract(mvc.perform(get("/internal/"+SECRET).with(httpBasic("test","test")))
+        contract(mvc.perform(get("/internal/"+SECRET).with(adminBearer()))
             .andExpect(status().isForbidden()).andReturn(),403);
         contract(mvc.perform(create(nextClient()).content("x".repeat(16385)))
             .andExpect(status().isPayloadTooLarge()).andReturn(),413);
         contract(mvc.perform(create(nextClient()).contentType("text/plain"))
             .andExpect(status().isUnsupportedMediaType()).andReturn(),415);
-        contract(mvc.perform(get(ADMIN+"/"+UUID.randomUUID()).with(httpBasic("test","test")))
+        contract(mvc.perform(get(ADMIN+"/"+UUID.randomUUID()).with(adminBearer()))
             .andExpect(status().isNotFound()).andReturn(),404);
     }
 
@@ -154,7 +154,7 @@ class SecurityContractIT {
 
     @Test void alternateMethodsAndForwardDispatchCannotBypassThePolicy() throws Exception {
         mvc.perform(get(PUBLIC)).andExpect(status().isUnauthorized());
-        mvc.perform(post(ADMIN).with(httpBasic("test","test"))).andExpect(status().isForbidden());
+        mvc.perform(post(ADMIN).with(adminBearer())).andExpect(status().isForbidden());
         mvc.perform(get(ADMIN).with(r -> {r.setDispatcherType(DispatcherType.FORWARD); return r;}))
             .andExpect(status().isUnauthorized());
         mvc.perform(get(ADMIN).with(r -> {r.setDispatcherType(DispatcherType.ERROR); return r;}))

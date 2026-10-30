@@ -41,20 +41,20 @@ not protect Docker contexts. Production env files are unnecessary for verificati
 
 ## Isolated smoke test
 
-The script receives an existing local image and uses public PostgreSQL 15/curl
+The script receives an existing local image and uses public PostgreSQL 15/curl/Python
 helper images. Containers and the internal Docker network have unique names. No
 host ports are published, no production credentials are loaded and outbound
 application access is blocked. Notifications/retries and the unused SMTP health
 check are disabled; the database health check remains active.
 
 Bounded checks verify application health, a 201 contact submission, admin 401
-without credentials and 200 with test credentials, and exactly one persisted row
+without credentials, refusal of former Basic credentials and 200 with a real JWT, and exactly one persisted row
 in temporary PostgreSQL. Failures return nonzero status with bounded logs of
 isolated test data. EXIT/INT/TERM cleanup removes containers and the network on
 success or ordinary failure. SIGKILL or host/daemon crashes can bypass cleanup;
 identify leftovers by the `contact-smoke-` prefix. Images remain in local cache.
 
-SMOKE_DATABASE_IMAGE and SMOKE_HTTP_IMAGE can override helper references for
+SMOKE_DATABASE_IMAGE, SMOKE_HTTP_IMAGE and SMOKE_AUTH_IMAGE can override helper references for
 controlled maintenance; defaults are recorded in the script. The database has no
 volume. Fresh-schema startup does not certify upgrades of a production database.
 
@@ -126,3 +126,17 @@ started and removed the temporary containers/network. Workflow and shell lint
 checks passed. The branch's complete Maven suite passed 62 tests with no skips.
 GitHub's Ubuntu runner additionally exercises the image on AMD64; inspect its
 actual PR check result before merging.
+
+## JWT-only runtime verification (#48)
+
+The smoke creates temporary RSA3072 keys and protected operator input in a private
+Docker volume. A narrow operator process migrates/provisions before startup;
+no legacy user variables are provided. The Python helper uses only stdlib HTTP,
+keeps tokens in memory/a private temporary file, and prints fixed phase results.
+It checks login/me/admin list/detail/status/logout, restarts the app to confirm
+persisted revocation and active sessions, then changes the password and proves
+all older tokens and the former password fail. Cleanup removes the helper/key
+volume as well as the original containers/network. No token enters argv or logs.
+The real TLS proxy also refuses auth/admin using its default-deny management ACL;
+production requires an explicitly reviewed VPN allowlist, not that test default.
+See the [cutover guide](15-Admin-JWT-migration.md) for remaining human/live gates.

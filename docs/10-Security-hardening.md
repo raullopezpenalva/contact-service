@@ -34,14 +34,11 @@ disabled to retain the original peer address. Nginx must overwrite X-Real-IP,
 rather than preserve a header provided by the caller. For another proxy topology,
 review and configure the immediate peer explicitly.
 
-Admin credentials are required through SPRING_SECURITY_USER_NAME and
-SPRING_SECURITY_USER_PASSWORD with no application defaults. The example.env ADMIN
-values are for local development only. Use a unique username and a randomly
-generated password of at least 20 characters in production, keep environment files
-outside version control and restrict their permissions. Basic Auth requires HTTPS.
-Authentication failures are logged without username, password or Authorization.
-Admin limiting applies to all requests, so repeated bad credentials are bounded
-without allowing an attacker to lock a specific username globally.
+Admin authentication is JWT-only with managed Argon2id accounts; shared Basic
+credentials are removed. See [the migration guide](15-Admin-JWT-migration.md) for
+mandatory signing configuration, auth quotas/body limits, same-origin policy,
+revocation and private VPN ingress. Authentication failures omit credentials;
+quotas count invalid attempts without permanently locking a username.
 
 ## Deployment review
 
@@ -105,8 +102,7 @@ scope and requestId instead of recording client IPs.
 
 The explicit anonymous allowlist is POST /api/v1/contact/messages and GET
 /actuator/health. Existing GET list/detail and PATCH status admin routes still
-require Basic authentication in this intermediate change; JWT/ADMIN migration
-remains in #44–#48. Other routes/methods are denied (401 anonymous, 403 authenticated).
+require live JWT/session authentication and explicit ADMIN authorization. Other routes/methods are denied (401 anonymous, 403 authenticated).
 Only internal ERROR dispatch to /error is permitted for sanitized rendering;
 FORWARD or ERROR dispatch to an admin route does not bypass authentication.
 Actuator exposes only health status, with no components/details.
@@ -115,8 +111,7 @@ Swagger/OpenAPI are disabled by default. For isolated local development only,
 activate the `local` profile and set `SECURITY_LOCAL_DOCS_ENABLED=true`,
 `SPRINGDOC_API_DOCS_ENABLED=true` and `SPRINGDOC_SWAGGER_UI_ENABLED=true`.
 The route permission additionally requires a local/test profile. Never activate
-these development profiles in production. Auth routes remain unavailable until
-their later reviewed implementation; this PR creates no login endpoint.
+these development profiles in production. Auth routes are defined in the migration guide and require private management ingress.
 
 SecurityContractIT verifies HTTP spoofing/canonicalization with real persistence,
 error/log redaction, correlated status contracts, denied routes and dispatches,

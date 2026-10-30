@@ -11,3 +11,7 @@ target/
 *.log
 
 dev-compose-starter.sh
+# Signing material and private auth client state never belong in Git.
+*.pem
+admin-keys/
+.auth-state/
