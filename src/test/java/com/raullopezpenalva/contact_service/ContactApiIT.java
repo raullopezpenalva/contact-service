@@ -23,9 +23,9 @@ import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
 @SpringBootTest(properties="app.security.rate-limit.contactrequest.max-requests=100")
-@AutoConfigureMockMvc
+@AutoConfigureMockMvc(print=org.springframework.boot.test.autoconfigure.web.servlet.MockMvcPrint.NONE)
 @ActiveProfiles("test")
-class ContactApiIT {
+class ContactApiIT extends JwtTestSupport {
     static final String ADMIN="/api/v1/admin/contact/messages";
     @Autowired MockMvc mvc;
     @Autowired ContactMessageRepository repository;
@@ -57,19 +57,19 @@ class ContactApiIT {
     }
     @Test void filtersAndPaginatesWithoutExposingMessageContent() throws Exception {
         message("Read message",ContactMessageStatus.READ);message("New message",ContactMessageStatus.NEW);
-        mvc.perform(get(ADMIN).param("status","READ").param("size","1").with(httpBasic("test","test")))
+        mvc.perform(get(ADMIN).param("status","READ").param("size","1").with(adminBearer()))
             .andExpect(status().isOk()).andExpect(jsonPath("$.totalElements").value(1))
             .andExpect(jsonPath("$.content[0].subject").value("Read message"))
             .andExpect(jsonPath("$.content[0].content").doesNotExist());
-        mvc.perform(get(ADMIN).param("page","1").param("size","1").with(httpBasic("test","test")))
+        mvc.perform(get(ADMIN).param("page","1").param("size","1").with(adminBearer()))
             .andExpect(status().isOk()).andExpect(jsonPath("$.number").value(1))
             .andExpect(jsonPath("$.totalElements").value(2));
     }
     @Test void retrievesFullDetailAndPersistsStatusNoteAndTimestamp() throws Exception {
         var m=message("Detail message",ContactMessageStatus.NEW);var before=m.getUpdatedAt();
-        mvc.perform(get(ADMIN+"/"+m.getId()).with(httpBasic("test","test")))
+        mvc.perform(get(ADMIN+"/"+m.getId()).with(adminBearer()))
             .andExpect(status().isOk()).andExpect(jsonPath("$.content").value(m.getContent()));
-        mvc.perform(patch(ADMIN+"/"+m.getId()+"/status").with(httpBasic("test","test"))
+        mvc.perform(patch(ADMIN+"/"+m.getId()+"/status").with(adminBearer())
             .contentType("application/json").content("{\"status\":\"READ\",\"adminNote\":\"Replied\"}"))
             .andExpect(status().isOk()).andExpect(jsonPath("$.status").value("READ"));
         var updated=repository.findById(m.getId()).orElseThrow();
@@ -78,23 +78,23 @@ class ContactApiIT {
     }
     @Test void missingMessagesReturn404ForReadAndUpdate() throws Exception {
         String path=ADMIN+"/"+UUID.randomUUID();
-        mvc.perform(get(path).with(httpBasic("test","test"))).andExpect(status().isNotFound());
-        mvc.perform(patch(path+"/status").with(httpBasic("test","test")).contentType("application/json")
+        mvc.perform(get(path).with(adminBearer())).andExpect(status().isNotFound());
+        mvc.perform(patch(path+"/status").with(adminBearer()).contentType("application/json")
             .content("{\"status\":\"READ\"}")).andExpect(status().isNotFound());
     }
     @ParameterizedTest @ValueSource(strings={"{}","{\"status\":\"INVALID\"}"})
     void invalidStatusUpdatesDoNotMutateData(String body) throws Exception {
         var m=message("Unchanged message",ContactMessageStatus.NEW);
-        mvc.perform(patch(ADMIN+"/"+m.getId()+"/status").with(httpBasic("test","test"))
+        mvc.perform(patch(ADMIN+"/"+m.getId()+"/status").with(adminBearer())
             .contentType("application/json").content(body)).andExpect(status().isBadRequest());
         assertEquals(ContactMessageStatus.NEW,repository.findById(m.getId()).orElseThrow().getStatus());
     }
     @ParameterizedTest @ValueSource(strings={"?status=INVALID","/invalid-uuid"})
     void invalidAdminParametersReturn400(String suffix) throws Exception {
-        mvc.perform(get(ADMIN+suffix).with(httpBasic("test","test"))).andExpect(status().isBadRequest());
+        mvc.perform(get(ADMIN+suffix).with(adminBearer())).andExpect(status().isBadRequest());
     }
     @Test void nonNumericPageUsesSpringDefault() throws Exception {
-        mvc.perform(get(ADMIN).param("page","invalid").with(httpBasic("test","test")))
+        mvc.perform(get(ADMIN).param("page","invalid").with(adminBearer()))
             .andExpect(status().isOk()).andExpect(jsonPath("$.number").value(0));
     }
     @Test void unauthenticatedUpdatesAreRejected() throws Exception {

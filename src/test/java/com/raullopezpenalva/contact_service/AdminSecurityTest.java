@@ -14,10 +14,10 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.junit.jupiter.api.Assertions.*;
 
 @SpringBootTest
-@AutoConfigureMockMvc
+@AutoConfigureMockMvc(print=org.springframework.boot.test.autoconfigure.web.servlet.MockMvcPrint.NONE)
 @ActiveProfiles("test")
 @ExtendWith(OutputCaptureExtension.class)
-class AdminSecurityTest {
+class AdminSecurityTest extends JwtTestSupport {
     @Autowired MockMvc mvc;
     @org.springframework.test.context.bean.override.mockito.MockitoBean
     com.raullopezpenalva.contact_service.modules.platform.notification.infrastructure.emailSender.EmailClient emailClient;
@@ -27,9 +27,12 @@ class AdminSecurityTest {
         mvc.perform(get("/api/v1/admin/contact/messages")).andExpect(status().isUnauthorized());
         mvc.perform(get("/api/v1/admin/contact/messages").with(httpBasic("test","secret-invalid-password")))
             .andExpect(status().isUnauthorized());
+        mvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post("/api/v1/auth/login")
+            .contentType("application/json").content("{\"username\":\"unknown-admin\",\"password\":\"secret-invalid-password\"}"))
+            .andExpect(status().isUnauthorized());
         assertTrue(output.getAll().contains("Admin authentication failed"));
         assertFalse(output.getAll().contains("secret-invalid-password"));
-        mvc.perform(get("/api/v1/admin/contact/messages").with(httpBasic("test","test")))
+        mvc.perform(get("/api/v1/admin/contact/messages").with(adminBearer()))
             .andExpect(status().isOk());
     }
 }

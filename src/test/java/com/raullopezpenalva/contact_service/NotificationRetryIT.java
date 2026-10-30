@@ -20,7 +20,7 @@ import static org.mockito.Mockito.*;
 
 @SpringBootTest(properties = {"app.notifications.retry.enabled=true", "app.notifications.retry.interval=1h", "app.notifications.retry.max-attempts=3"})
 @ActiveProfiles("test")
-class NotificationRetryIT {
+class NotificationRetryIT extends JwtTestSupport {
     @Autowired NotificationDeliveryRepository deliveries;
     @Autowired NotificationDeliveryJpaRepository jpa;
     @Autowired NotificationPayloadCodec codec;

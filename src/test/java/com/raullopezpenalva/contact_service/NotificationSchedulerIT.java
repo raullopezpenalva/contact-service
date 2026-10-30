@@ -26,10 +26,10 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 @SpringBootTest(properties = {"app.notifications.channels=EMAIL", "app.notifications.retry.enabled=true",
     "app.notifications.retry.interval=50ms", "spring.mail.username=service@example.com", "email.recipient=owner@example.com"})
-@AutoConfigureMockMvc
+@AutoConfigureMockMvc(print=org.springframework.boot.test.autoconfigure.web.servlet.MockMvcPrint.NONE)
 @ActiveProfiles("test")
 @org.springframework.test.annotation.DirtiesContext(classMode = org.springframework.test.annotation.DirtiesContext.ClassMode.AFTER_CLASS)
-class NotificationSchedulerIT {
+class NotificationSchedulerIT extends JwtTestSupport {
     @Autowired MockMvc mvc;
     @Autowired NotificationDeliveryJpaRepository deliveries;
     @MockitoBean JavaMailSender mail;
