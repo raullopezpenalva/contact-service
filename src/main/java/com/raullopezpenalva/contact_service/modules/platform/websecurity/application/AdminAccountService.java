@@ -58,4 +58,24 @@ public class AdminAccountService {
         return passwords.eligiblePasswordMatches(password,account.map(AdminAccount::getPasswordHash).orElse(null),
             account.map(a->a.isEnabled() && a.getRoles().contains(AdminRole.ADMIN)).orElse(false));
     }
+    @Transactional
+    public Summary revokeSessions(String login) {
+        lockManagement();var account=required(login);account.invalidateAuthentication();revoke(account);accounts.flush();
+        log.info("Admin sessions revoked accountId={}",account.getId());return summary(account);
+    }
+    @Transactional
+    public int revokeKey(String kid) {
+        if(kid==null || !kid.matches("[A-Za-z0-9_-]{1,64}")) throw new IllegalArgumentException("Invalid key identifier");
+        lockManagement();
+        int count=jdbc.update("UPDATE admin_sessions SET revoked_at=CURRENT_TIMESTAMP WHERE signing_key_id=? AND revoked_at IS NULL",kid);
+        log.info("Admin signing key sessions revoked count={}",count);return count;
+    }
+    @Transactional
+    public Summary setRoles(String login,Set<AdminRole> roles) {
+        lockManagement();var account=required(login);
+        if(account.isEnabled() && account.getRoles().contains(AdminRole.ADMIN) && !roles.contains(AdminRole.ADMIN) && accounts.countEnabledAdmins()<=1)
+            throw new IllegalStateException("Cannot remove the last enabled administrator");
+        if(!account.getRoles().equals(roles)){account.setRoles(roles);revoke(account);accounts.flush();}
+        log.info("Admin roles changed accountId={}",account.getId());return summary(account);
+    }
 }
