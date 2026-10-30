@@ -59,10 +59,10 @@ public class ContactRequestCreatedEventHandler {
         } catch (Exception ex) {
             
             log.error(
-                "Failed to handle ContactRequestCreatedEvent eventId={}, contactRequestId={}",
+                "Failed to handle ContactRequestCreatedEvent eventId={}, contactRequestId={}, errorType={}",
                 event.eventId(),
                 event.contactRequestId(),
-                ex
+                ex.getClass().getSimpleName()
             );
         }
     }
