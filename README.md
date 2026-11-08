@@ -319,3 +319,9 @@ PostgreSQL without external notifications. See
 devcontainer commands, required checks and production limitations.
 
 Release preparation after the JWT migration: [readiness and remaining production gates](docs/16-JWT-release-readiness.md).
+
+## Verified image publication
+
+[Image publication and digest handoff to homelab](docs/18-Image-publication.md)
+describes source labels, tested-image transfer, GHCR job permissions and the
+publication receipt. CI does not deploy or change Endurance/edge-dmz.

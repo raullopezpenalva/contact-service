@@ -15,3 +15,7 @@ dev-compose-starter.sh
 *.pem
 admin-keys/
 .auth-state/
+
+# Local publication-helper bytecode
+__pycache__/
+*.py[cod]
