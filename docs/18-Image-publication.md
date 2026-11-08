@@ -63,3 +63,7 @@ reimplement a separate Compose deployment in this repository.
 
 Local images with the all-zero revision used during workflow preparation are
 fixtures, never deployment candidates or production publication receipts.
+
+For a read-only hosted handoff rehearsal, manually run **Pull request tests**
+on the reviewed branch with `verify_release_artifact=true`. It exports, downloads
+and verifies the image by artifact ID without registry login or packages write.
