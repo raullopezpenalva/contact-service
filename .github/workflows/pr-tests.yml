@@ -27,6 +27,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
+      - uses: actions/checkout@v6
       - name: Require the producer's artifact identity
         env:
           IMAGE_ARTIFACT_ID: ${{ needs.tests.outputs.image_artifact_id }}
@@ -41,6 +42,10 @@ jobs:
           merge-multiple: true
           path: verified-image
       - name: Load the verified image without publishing
+        env:
+          SOURCE_REVISION: ${{ github.sha }}
         run: |
           gzip --decompress --stdout verified-image/runtime-image.tar.gz | docker load
-          test "$(docker image inspect contact-service:ci-smoke --format '{{.Config.User}}')" = '10001:10001'
+          python3 scripts/image-publication.py verify --image contact-service:ci-smoke \
+            --repository ghcr.io/raullopezpenalva/contact-service --revision "$SOURCE_REVISION" \
+            --user '10001:10001' --verified verified-image/verified-image.json

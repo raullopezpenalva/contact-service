@@ -46,11 +46,27 @@ jobs:
     steps:
       - uses: actions/checkout@v6
       - name: Build runtime image after Maven verification
-        run: docker build --build-arg SKIP_TESTS=true -t contact-service:ci-smoke .
+        env:
+          IMAGE_SOURCE: https://github.com/${{ github.repository }}
+          IMAGE_REVISION: ${{ github.sha }}
+        run: |
+          docker build --platform linux/amd64 --build-arg SKIP_TESTS=true \
+            --label "org.opencontainers.image.source=$IMAGE_SOURCE" \
+            --label "org.opencontainers.image.revision=$IMAGE_REVISION" \
+            -t contact-service:ci-smoke .
       - name: Verify runtime against isolated PostgreSQL
         run: bash scripts/verify-container.sh contact-service:ci-smoke
       - name: Verify controlled admin operator
         run: bash scripts/verify-admin-operator.sh contact-service:ci-smoke
+      - name: Verify image publication helpers
+        run: python3 -m unittest discover -s scripts/tests -v
+      - name: Capture the tested runtime identity
+        env:
+          IMAGE_REVISION: ${{ github.sha }}
+        run: |
+          python3 scripts/image-publication.py capture --image contact-service:ci-smoke \
+            --repository ghcr.io/raullopezpenalva/contact-service --revision "$IMAGE_REVISION" \
+            --user '10001:10001' --verified verified-image.json
       - name: Export verified runtime image
         if: inputs.export_image
         run: docker save contact-service:ci-smoke | gzip > runtime-image.tar.gz
@@ -60,6 +76,9 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: verified-runtime-${{ github.run_id }}-${{ github.run_attempt }}
-          path: runtime-image.tar.gz
+          path: |
+            runtime-image.tar.gz
+            verified-image.json
+          if-no-files-found: error
           retention-days: 1
           compression-level: 0

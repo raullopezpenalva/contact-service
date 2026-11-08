@@ -103,3 +103,20 @@ because it explicitly requires them. Do not duplicate the same rules in several
 files or add nested instruction overrides without a concrete directory-specific
 need. No machine-specific Codex settings or permission overrides are required.
 See the [official AGENTS.md documentation](https://learn.chatgpt.com/docs/agent-configuration/agents-md).
+
+## Docker exec streams in an existing local devcontainer
+
+During the 2026-11-08 image-publication preparation, the Docker-outside-of-Docker
+feature's local `/var/run/docker.sock` socat proxy closed long exec streams early
+in the existing OrbStack container. An isolated two-second command returned after
+about 0.53 seconds without its final marker. This also interrupted the JWT smoke
+client before it could save its temporary session state; it was not an accepted
+application failure or a reason to remove the lifecycle checks.
+
+When reproducing this specific local condition as a user permitted to access the
+already-mounted host socket, use `DOCKER_HOST=unix:///var/run/docker-host.sock`
+for that devcontainer invocation. The same two-second probe then completed and
+retained its marker. This targets the same local Docker engine, without the
+intermediate proxy. Do not hardcode a container ID or set this path in hosted CI;
+GitHub runners use their normal local daemon. Retain the existing permissions and
+socket checks; do not chmod the socket or expose Docker TCP to work around it.
