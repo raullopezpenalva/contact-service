@@ -325,3 +325,10 @@ Release preparation after the JWT migration: [readiness and remaining production
 [Image publication and digest handoff to homelab](docs/18-Image-publication.md)
 describes source labels, tested-image transfer, GHCR job permissions and the
 publication receipt. CI does not deploy or change Endurance/edge-dmz.
+
+## Private metrics
+
+The opt-in [Prometheus observability profile](docs/16-Prometheus-observability.md)
+provides HTTP/JVM/GC/Hikari metrics on a separate private management port while
+preserving the application health URL. It is not enabled or deployed by adding
+this documentation; image release and homelab rollout remain maintainer actions.
