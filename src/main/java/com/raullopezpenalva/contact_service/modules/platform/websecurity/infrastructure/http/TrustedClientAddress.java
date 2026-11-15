@@ -11,11 +11,16 @@ public final class TrustedClientAddress {
 
     public static String resolve(HttpServletRequest request, String trustedPeers) {
         String peer = literal(request.getRemoteAddr());
-        boolean trusted = peer != null && Arrays.stream(trustedPeers.split(","))
-            .map(String::trim).map(TrustedClientAddress::literal).anyMatch(peer::equals);
+        boolean trusted = isTrusted(request, trustedPeers);
         var headers = Collections.list(request.getHeaders("X-Real-IP"));
         String client = trusted && headers.size() == 1 ? literal(headers.getFirst()) : null;
         return client != null ? client : peer != null ? peer : request.getRemoteAddr();
+    }
+
+    public static boolean isTrusted(HttpServletRequest request, String trustedPeers) {
+        String peer = literal(request.getRemoteAddr());
+        return peer != null && trustedPeers != null && Arrays.stream(trustedPeers.split(","))
+            .map(String::trim).map(TrustedClientAddress::literal).anyMatch(peer::equals);
     }
 
     // Only numeric literals reach InetAddress; this path never resolves a hostname.
