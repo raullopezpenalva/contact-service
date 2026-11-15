@@ -43,6 +43,7 @@ public class ContactRateLimitFilter extends OncePerRequestFilter {
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response,
             FilterChain chain) throws ServletException, IOException {
         String previousId = MDC.get("requestId");
+        RequestMetadata.initialize(request, trustedProxies);
         String id = RequestMetadata.requestId(request);
         response.setHeader("X-Request-ID", id);
         MDC.put("requestId", id);

@@ -8,6 +8,16 @@ public final class RequestMetadata {
     private static final String REQUEST_ID = RequestMetadata.class.getName() + ".id";
     private RequestMetadata() {}
 
+    /** Only the immediate trusted proxy can supply nginx's generated 128-bit ID. */
+    public static void initialize(HttpServletRequest request, String trustedPeers) {
+        if (request.getAttribute(REQUEST_ID) != null) return;
+        var values = java.util.Collections.list(request.getHeaders("X-Request-ID"));
+        if (TrustedClientAddress.isTrusted(request, trustedPeers) && values.size() == 1
+                && values.getFirst().matches("[a-f0-9]{32}")) {
+            request.setAttribute(REQUEST_ID, values.getFirst());
+        }
+    }
+
     public static String requestId(HttpServletRequest request) {
         Object value = request.getAttribute(REQUEST_ID);
         if (value == null) {

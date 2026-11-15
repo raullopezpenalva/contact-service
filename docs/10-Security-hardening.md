@@ -119,3 +119,22 @@ minimal health, and unchanged authentication boundaries. The isolated PostgreSQL
 runtime smoke validates the same route/error/attribution behavior in the image.
 Live nginx-proxy/homelab remains separately maintained; #43 changes no production
 proxy configuration or deployment.
+
+## Proxy request correlation
+
+The rate-limit filter accepts exactly one lowercase 32-hex `X-Request-ID` only
+from an immediate peer in `app.security.trusted-proxies`. The ingress must replace
+any incoming header with its own generated ID; trust never comes from forwarded
+client headers. Direct or malformed requests retain server-generated UUIDs.
+The ID is diagnostic metadata, never authentication or proof of delivery.
+
+The existing events executor copies only `requestId` into asynchronous work and
+restores worker context afterwards. The observability profile includes it in the
+log level pattern. Domain events, database schema, delivery semantics and API
+payloads are unchanged. Scheduled retries after the initiating execution do not
+retain this in-memory context; durable correlation is separate work. No message
+bodies, client addresses or arbitrary MDC values are added to logs.
+
+Deploy readers compatible with both nginx log formats before changing the proxy.
+Production acceptance must compare nginx's response/header/log ID with Contact's
+error or notification log ID using synthetic data and disabled external channels.
