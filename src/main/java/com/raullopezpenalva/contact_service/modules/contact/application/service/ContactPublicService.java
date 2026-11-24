@@ -1,5 +1,8 @@
 package com.raullopezpenalva.contact_service.modules.contact.application.service;
 
+import com.raullopezpenalva.contact_service.shared.observability.ContactTracing;
+import org.springframework.beans.factory.annotation.Autowired;
+
 import org.springframework.stereotype.Service;
 
 import com.raullopezpenalva.contact_service.modules.contact.api.dto.pub.request.CreateContactMessageRequest;
@@ -15,6 +18,9 @@ import jakarta.transaction.Transactional;
 
 @Service
 public class ContactPublicService {
+    @Autowired
+    private ContactTracing tracing =
+        new ContactTracing();
 
     // Repository used to perform CRUD operations on ContactMessage entities
     private final ContactMessageRepository contactMessageRepository;
@@ -33,7 +39,8 @@ public class ContactPublicService {
         
         ContactMessage entity = ContactMessagePublicMapper.toEntity(request, clientContext);
 
-        var saved = contactMessageRepository.saveAndFlush(entity);
+        var saved = tracing.call(ContactTracing.Operation.PERSIST,
+            () -> contactMessageRepository.saveAndFlush(entity));
 
         eventPublisher.publish(ContactMessageCreatedEventMapper.toEvent(saved));
 

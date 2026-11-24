@@ -332,3 +332,5 @@ The opt-in [Prometheus observability profile](docs/16-Prometheus-observability.m
 provides HTTP/JVM/GC/Hikari metrics on a separate private management port while
 preserving the application health URL. It is not enabled or deployed by adding
 this documentation; image release and homelab rollout remain maintainer actions.
+
+Opt-in public-contact tracing: [pilot configuration and verification](docs/17-Tracing-pilot.md).

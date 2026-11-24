@@ -1,5 +1,8 @@
 package com.raullopezpenalva.contact_service.shared.events;
 
+import com.raullopezpenalva.contact_service.shared.observability.ContactTracing;
+import org.springframework.beans.factory.annotation.Autowired;
+
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.scheduling.annotation.EnableAsync;
@@ -10,6 +13,9 @@ import java.util.concurrent.Executor;
 @Configuration
 @EnableAsync
 public class EventsConfig {
+    @Autowired
+    private ContactTracing tracing =
+        new ContactTracing();
 
     @Bean(name = "eventsExecutor")
     public Executor eventsExecutor() {
@@ -24,12 +30,13 @@ public class EventsConfig {
         // Copy only the technical correlation ID, never arbitrary caller context.
         executor.setTaskDecorator(task -> {
             String captured = org.slf4j.MDC.get("requestId");
+            Runnable traced = tracing.decorate(task);
             return () -> {
                 String previous = org.slf4j.MDC.get("requestId");
                 try {
                     if (captured == null) org.slf4j.MDC.remove("requestId");
                     else org.slf4j.MDC.put("requestId", captured);
-                    task.run();
+                    traced.run();
                 } finally {
                     if (previous == null) org.slf4j.MDC.remove("requestId");
                     else org.slf4j.MDC.put("requestId", previous);
