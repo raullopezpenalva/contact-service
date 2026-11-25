@@ -3,7 +3,8 @@
   "build": { "dockerfile": "Dockerfile" },
   "workspaceFolder": "/workspaces/contact-service",
   "containerEnv": {
-    "TESTCONTAINERS_HOST_OVERRIDE": "host.docker.internal"
+    "TESTCONTAINERS_HOST_OVERRIDE": "host.docker.internal",
+    "TESTCONTAINERS_DOCKER_SOCKET_OVERRIDE": "/var/run/docker.sock"
   },
   "features": {
     "ghcr.io/devcontainers/features/docker-outside-of-docker:1": {},

@@ -1,5 +1,8 @@
 package com.raullopezpenalva.contact_service.modules.platform.notification.application.service;
 
+import com.raullopezpenalva.contact_service.shared.observability.ContactTracing;
+import org.springframework.beans.factory.annotation.Autowired;
+
 import com.raullopezpenalva.contact_service.modules.platform.notification.application.model.NotificationMessage;
 import com.raullopezpenalva.contact_service.modules.platform.notification.application.port.out.NotificationDeliveryRepository;
 import com.raullopezpenalva.contact_service.modules.platform.notification.application.port.out.NotificationGateway;
@@ -17,6 +20,9 @@ import org.springframework.stereotype.Service;
 
 @Service
 public class NotificationService {
+    @Autowired
+    private ContactTracing tracing =
+        new ContactTracing();
 
     private static final Logger log = LoggerFactory.getLogger(NotificationService.class);
     private final NotificationDeliveryRepository notificationDeliveryRepository;
@@ -53,7 +59,10 @@ public class NotificationService {
                 throw new IllegalStateException("No gateway found for channel: " + delivery.getChannel());
             }
 
-            gateway.sendNotification(message);
+            var operation = delivery.getChannel() == NotificationChannel.EMAIL
+                ? ContactTracing.Operation.EMAIL
+                : ContactTracing.Operation.TELEGRAM;
+            tracing.call(operation, () -> { gateway.sendNotification(message); return null; });
             delivery.markAsSent();
             log.info("Notification sent successfully for eventId={}", message.getEventId());
         } catch (Exception ex) {

@@ -32,7 +32,7 @@ public class ContactRequestCreatedEventHandler {
         this.notificationChannelsResolver = notificationChannelsResolver;
     }
 
-    @Async
+    @Async("eventsExecutor")
     @EventListener
     public void handle(ContactRequestCreatedEvent event) {
         try {
