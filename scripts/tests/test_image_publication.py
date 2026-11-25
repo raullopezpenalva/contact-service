@@ -1,5 +1,8 @@
 """Image handoff rejects mismatched identity and ambiguous registry results."""
 import importlib.util
+import io
+import tarfile
+import hashlib
 import json
 from pathlib import Path
 import subprocess
@@ -70,9 +73,49 @@ class PublicationIdentity(unittest.TestCase):
                     '--repository', self.repository, '--revision', self.revision,
                     '--user', '10001:10001', '--verified', str(metadata)]
             result = subprocess.CompletedProcess([], 0, json.dumps([self.image]), '')
-            with patch.object(sys, 'argv', argv), patch.object(MODULE.subprocess, 'run', return_value=result):
+            with patch.object(sys, 'argv', argv), patch.object(MODULE.subprocess, 'run', return_value=result), patch.object(MODULE, 'configuration_digest', return_value=self.image['Id']):
                 with self.assertRaises(SystemExit):
                     MODULE.main()
+
+    def archive(self, config=None, duplicate=False):
+        value = config or {'architecture':'amd64','os':'linux','config':self.image['Config']}
+        raw = json.dumps(value).encode()
+        stream = io.BytesIO()
+        with tarfile.open(fileobj=stream, mode='w') as archive:
+            entries = [{'Config':'blobs/config','RepoTags':['local:tested'],'Layers':[]}]
+            if duplicate: entries += entries
+            for name,data in [('manifest.json',json.dumps(entries).encode()),('blobs/config',raw)]:
+                member=tarfile.TarInfo(name);member.size=len(data);archive.addfile(member,io.BytesIO(data))
+        stream.seek(0)
+        return stream, 'sha256:'+hashlib.sha256(raw).hexdigest()
+
+    def test_saved_config_digest_is_not_the_inspect_index_id(self):
+        stream, expected = self.archive()
+        actual = MODULE.saved_configuration_digest(stream,self.repository,self.revision,'10001:10001')
+        self.assertEqual(actual,expected)
+        self.assertNotEqual(actual,self.image['Id'])
+        self.assertNotIn('SECRET',actual)
+
+    def test_saved_wrong_platform_source_user_and_ambiguity_are_rejected(self):
+        for config in [{'architecture':'arm64','os':'linux','config':self.image['Config']},
+                       {'architecture':'amd64','os':'linux','config':self.image['Config']|{'User':'0'}},
+                       {'architecture':'amd64','os':'linux','config':self.image['Config']|{'Labels':{}}}]:
+            stream,_=self.archive(config)
+            with self.assertRaises(ValueError):MODULE.saved_configuration_digest(stream,self.repository,self.revision,'10001:10001')
+        stream,_=self.archive(duplicate=True)
+        with self.assertRaises(ValueError):MODULE.saved_configuration_digest(stream,self.repository,self.revision,'10001:10001')
+
+    def test_capture_uses_the_saved_configuration_digest(self):
+        with tempfile.TemporaryDirectory() as directory:
+            metadata=Path(directory)/'verified.json'
+            argv=['image-publication.py','capture','--image','local:tested','--repository',self.repository,
+                  '--revision',self.revision,'--user','10001:10001','--verified',str(metadata)]
+            result=subprocess.CompletedProcess([],0,json.dumps([self.image]),'')
+            with patch.object(sys,'argv',argv), patch.object(MODULE.subprocess,'run',return_value=result), patch.object(MODULE,'configuration_digest',return_value='sha256:'+'e'*64):
+                MODULE.main()
+            value=json.loads(metadata.read_text())
+            self.assertEqual(value['config_digest'],'sha256:'+'e'*64)
+            self.assertNotIn('SECRET',json.dumps(value))
 
 
 if __name__ == '__main__':

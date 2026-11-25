@@ -1,6 +1,8 @@
 #!/usr/bin/env python3
 """Capture verified image identity and export a metadata-only publication receipt."""
 import argparse
+import hashlib
+import tarfile
 import json
 from pathlib import Path
 import re
@@ -39,6 +41,53 @@ def publication(verified, push_output):
                        'commit_tag': verified['image_repository'] + ':sha-' + verified['source_revision']}
 
 
+def saved_configuration_digest(stream, repository, revision, user):
+    """Hash config bytes from the selected saved image, never inspect.Id."""
+    small = {}
+    total = 0
+    with tarfile.open(fileobj=stream, mode='r|') as archive:
+        for member in archive:
+            if member.isfile() and member.size <= 262144:
+                total += member.size
+                if total > 4194304 or member.name in small:
+                    raise ValueError('Ambiguous or oversized image metadata')
+                small[member.name] = archive.extractfile(member).read()
+    entries = json.loads(small['manifest.json'])
+    configs = []
+    for entry in entries:
+        name = entry['Config']
+        if not isinstance(name, str) or name.startswith('/') or '..' in name.split('/'):
+            raise ValueError('Invalid saved configuration reference')
+        raw = small[name]
+        value = json.loads(raw)
+        if value.get('architecture') == 'amd64' and value.get('os') == 'linux':
+            configs.append((raw, value))
+        elif (value.get('architecture'), value.get('os')) != ('unknown', 'unknown'):
+            raise ValueError('Unexpected saved platform')
+    if len(configs) != 1:
+        raise ValueError('A single saved linux/amd64 image is required')
+    raw, value = configs[0]
+    digest = 'sha256:' + hashlib.sha256(raw).hexdigest()
+    identity({'Id': digest, 'Architecture': value['architecture'], 'Os': value['os'],
+              'Config': value['config']}, repository, revision, user)
+    return digest
+
+
+def configuration_digest(image, repository, revision, user):
+    process = subprocess.Popen(['docker', 'image', 'save', image],
+                               stdout=subprocess.PIPE, stderr=subprocess.DEVNULL)
+    try:
+        digest = saved_configuration_digest(process.stdout, repository, revision, user)
+        if process.wait(timeout=30):
+            raise ValueError('Cannot export image identity')
+        return digest
+    finally:
+        process.stdout.close()
+        if process.poll() is None:
+            process.kill()
+        process.wait(timeout=10)
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('operation', choices=['capture', 'verify', 'receipt'])
@@ -54,6 +103,7 @@ def main():
         result = subprocess.run(['docker', 'image', 'inspect', args.image],
                                 capture_output=True, text=True, check=True, timeout=30)
         actual = identity(json.loads(result.stdout)[0], args.repository, args.revision, args.user)
+        actual['config_digest'] = configuration_digest(args.image, args.repository, args.revision, args.user)
         if args.operation == 'capture':
             args.verified.write_text(json.dumps(actual, indent=2) + '\n')
         else:
@@ -63,7 +113,7 @@ def main():
                 if not args.push_output or not args.output:
                     raise ValueError('Receipt paths required')
                 args.output.write_text(json.dumps(publication(actual, args.push_output.read_text()), indent=2) + '\n')
-    except (OSError, ValueError, KeyError, TypeError, IndexError, subprocess.SubprocessError):
+    except (OSError, ValueError, KeyError, TypeError, IndexError, subprocess.SubprocessError, tarfile.TarError):
         raise SystemExit('Image publication identity rejected; no environment or image configuration printed.') from None
     print('Image identity verified; no deployment performed.')
 
